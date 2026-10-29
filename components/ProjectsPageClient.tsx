@@ -49,6 +49,8 @@ export function ProjectsPageClient({
     }
   };
 
+  const activeProjectsCount = projects.filter((p) => p.status !== "Archived").length;
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col md:flex-row">
       <Sidebar
@@ -57,6 +59,7 @@ export function ProjectsPageClient({
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={0}
+        projectsCount={activeProjectsCount}
         user={user}
         onSignOut={() => signout()}
       />

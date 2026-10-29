@@ -159,6 +159,7 @@ export function DashboardClient({
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={pendingTasksCount}
+        projectsCount={activeProjectsCount}
         user={user}
         onSignOut={() => signout()}
       />

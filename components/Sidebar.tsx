@@ -24,6 +24,7 @@ interface SidebarProps {
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   pendingTasksCount: number;
+  projectsCount?: number;
   user?: { email?: string; fullName?: string } | null;
   onSignOut?: () => void;
 }
@@ -41,6 +42,7 @@ export function Sidebar({
   isOpenMobile,
   onCloseMobile,
   pendingTasksCount,
+  projectsCount,
   user,
   onSignOut,
 }: SidebarProps) {
@@ -50,7 +52,12 @@ export function Sidebar({
   const navItems: NavItemConfig[] = [
     { id: "Dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "Tasks", label: "Tasks", icon: CheckSquare, badge: pendingTasksCount },
-    { id: "Projects", label: "Projects", icon: FolderGit2, badge: 4 },
+    {
+      id: "Projects",
+      label: "Projects",
+      icon: FolderGit2,
+      badge: typeof projectsCount === "number" && projectsCount > 0 ? projectsCount : undefined,
+    },
     { id: "Code Snippets", label: "Code Snippets", icon: Code2 },
     { id: "Git Toolkit", label: "Git Toolkit", icon: GitBranch },
     { id: "AI Assistant", label: "AI Assistant", icon: Bot },

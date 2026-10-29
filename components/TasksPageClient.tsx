@@ -61,6 +61,7 @@ export function TasksPageClient({
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={pendingCount}
+        projectsCount={initialProjects.filter((p) => p.status !== "Archived").length}
         user={user}
         onSignOut={() => signout()}
       />
