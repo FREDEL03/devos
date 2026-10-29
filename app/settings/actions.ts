@@ -206,8 +206,8 @@ export async function updateUserProfile(
   });
 
   return { success: true };
-} using official Supabase Auth.
- */
+}
+
 export async function changePassword(
   newPassword: string,
   confirmPassword: string

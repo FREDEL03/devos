@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getActivityLogs } from "./actions";
 import { ActivityLogPageClient } from "@/components/ActivityLogPageClient";
 
-export const dynamic = "force-dynamic";
 
 export default async function ActivityLogPage() {
   const supabase = await createClient();
