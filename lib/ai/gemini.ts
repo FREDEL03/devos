@@ -17,6 +17,7 @@ export interface AIAssistantRequest {
   taskType: AITaskType;
   prompt: string;
   contextCode?: string;
+  responseStyle?: "concise" | "balanced" | "detailed";
 }
 
 export interface AIAssistantResponse {
@@ -68,11 +69,21 @@ const MAX_PROMPT_LENGTH = 8000;
 /**
  * Builds task-specific system prompts adhering to engineering guidelines
  */
-function buildSystemInstruction(taskType: AITaskType): string {
+function buildSystemInstruction(
+  taskType: AITaskType,
+  responseStyle: "concise" | "balanced" | "detailed" = "balanced"
+): string {
+  let styleGuidance = "";
+  if (responseStyle === "concise") {
+    styleGuidance = "\nSTYLE GUIDELINE: Be extremely concise, direct, and code-focused. Omit lengthy prose.";
+  } else if (responseStyle === "detailed") {
+    styleGuidance = "\nSTYLE GUIDELINE: Provide in-depth explanations with step-by-step reasoning, trade-offs, and examples.";
+  }
+
   const baseInstruction = `You are an expert senior software engineer and technical assistant embedded within DevOS, a developer workspace.
 Your job is to provide accurate, concise, and actionable engineering assistance.
 Always format code snippets inside proper markdown code blocks with the language identifier (e.g., \`\`\`typescript, \`\`\`sql, \`\`\`php).
-Be direct, eliminate unnecessary conversational fluff, and prioritize correctness.
+Be direct, eliminate unnecessary conversational fluff, and prioritize correctness.${styleGuidance}
 IMPORTANT DISCLAIMER: Never claim that AI-generated code is guaranteed to work in production without review and testing.`;
 
   switch (taskType) {
@@ -168,7 +179,7 @@ export async function callGemini(request: AIAssistantRequest): Promise<AIAssista
     );
   }
 
-  const systemInstruction = buildSystemInstruction(request.taskType);
+  const systemInstruction = buildSystemInstruction(request.taskType, request.responseStyle);
 
   let userContent = request.prompt.trim();
   if (request.contextCode && request.contextCode.trim()) {
@@ -275,5 +286,34 @@ export function __runGeminiValidationSelfCheck(): boolean {
   }
 
   return true;
+}
+
+/**
+ * Server-only utility to verify Gemini API connection and model setup.
+ * Strictly never exposes the API key.
+ */
+export async function verifyGeminiConnection(): Promise<{
+  configured: boolean;
+  model: string;
+  provider: string;
+  error?: string;
+}> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+
+  if (!apiKey || apiKey === "your-gemini-api-key" || apiKey === "your_gemini_api_key_here") {
+    return {
+      configured: false,
+      model,
+      provider: "Google Gemini",
+      error: "GEMINI_API_KEY is not configured in .env.local",
+    };
+  }
+
+  return {
+    configured: true,
+    model,
+    provider: "Google Gemini",
+  };
 }
 

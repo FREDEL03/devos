@@ -42,6 +42,8 @@ export function ProjectsPageClient({
       router.push("/work-logs");
     } else if (tab === "Learning Tracker") {
       router.push("/learning");
+    } else if (tab === "Settings") {
+      router.push("/settings");
     } else {
       router.push(`/?tab=${encodeURIComponent(tab)}`);
     }

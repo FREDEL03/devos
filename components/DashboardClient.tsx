@@ -15,6 +15,7 @@ import { GitToolkit } from "@/components/GitToolkit";
 import { AIAssistant } from "@/components/AIAssistant";
 import { WorkLogManager } from "@/components/WorkLogManager";
 import { LearningManager } from "@/components/LearningManager";
+import { SettingsManager } from "@/components/SettingsManager";
 import { GitMessageModal } from "@/components/GitMessageModal";
 import { SnippetModal } from "@/components/SnippetModal";
 import { DedicatedViews } from "@/components/DedicatedViews";
@@ -24,7 +25,8 @@ import {
   CheckSquare,
   Code2,
 } from "@/components/icons";
-import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry } from "@/components/types";
+import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings } from "@/components/types";
+import { DEFAULT_USER_SETTINGS } from "@/app/settings/actions";
 import { signout } from "@/app/auth/actions";
 import { createTask, updateTask, TaskInput } from "@/app/tasks/actions";
 import { createSnippet, SnippetInput } from "@/app/snippets/actions";
@@ -40,6 +42,7 @@ interface DashboardClientProps {
   initialDbSnippets?: CodeSnippet[];
   initialDbWorkLogs?: WorkLog[];
   initialDbLearningEntries?: LearningEntry[];
+  initialDbSettings?: UserSettings;
 }
 
 export function DashboardClient({
@@ -49,8 +52,11 @@ export function DashboardClient({
   initialDbSnippets = [],
   initialDbWorkLogs = [],
   initialDbLearningEntries = [],
+  initialDbSettings,
 }: DashboardClientProps) {
-  const [activeTab, setActiveTab] = useState<NavTab>("Dashboard");
+  const [activeTab, setActiveTab] = useState<NavTab>(
+    (initialDbSettings?.default_landing as NavTab) || "Dashboard"
+  );
   const [tasks, setTasks] = useState<Task[]>(initialDbTasks);
   const [projects, setProjects] = useState<Project[]>(initialDbProjects);
   const [snippets, setSnippets] = useState<CodeSnippet[]>(initialDbSnippets);
@@ -247,6 +253,15 @@ export function DashboardClient({
             <WorkLogManager initialLogs={workLogs} projects={projects} />
           ) : activeTab === "Learning Tracker" ? (
             <LearningManager initialEntries={learningEntries} />
+          ) : activeTab === "Settings" ? (
+            <SettingsManager
+              initialSettings={initialDbSettings || { ...DEFAULT_USER_SETTINGS, user_id: user?.id }}
+              user={{
+                id: user?.id || "",
+                email: user?.email,
+                fullName: user?.fullName,
+              }}
+            />
           ) : (
             <DedicatedViews
               activeTab={activeTab}

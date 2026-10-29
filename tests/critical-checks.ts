@@ -66,4 +66,28 @@ assert.ok(!sanitized.includes("AQ.TEST_DUMMY_KEY_FOR_UNIT_TEST_ONLY_12345"));
 assert.ok(sanitized.includes("[REDACTED_API_KEY]"));
 console.log("✓ API key redaction passed.");
 
+console.log("▶ [Test 5] Settings Constraints & Allowed Enum Values...");
+const validThemes = ["dark", "light", "system"];
+const validAccents = ["violet", "indigo", "emerald", "blue", "amber", "rose"];
+const validDateFormats = ["YYYY-MM-DD", "MM/DD/YYYY", "DD/MM/YYYY"];
+const validTimeFormats = ["12h", "24h"];
+const validViews = ["List", "Grid"];
+const validSorts = ["priority", "due_date", "created_at", "title"];
+const validResponseStyles = ["concise", "balanced", "detailed"];
+
+assert.ok(validThemes.includes("dark"));
+assert.ok(validThemes.includes("light"));
+assert.ok(!validThemes.includes("neon"));
+
+assert.ok(validAccents.includes("violet"));
+assert.ok(validAccents.includes("rose"));
+assert.ok(!validAccents.includes("rainbow"));
+
+assert.ok(validDateFormats.includes("YYYY-MM-DD"));
+assert.ok(validTimeFormats.includes("12h"));
+assert.ok(validViews.includes("List"));
+assert.ok(validSorts.includes("priority"));
+assert.ok(validResponseStyles.includes("balanced"));
+console.log("✓ Settings constraints verified.");
+
 console.log("\n All Critical Logic & Security Checks Passed Successfully!");

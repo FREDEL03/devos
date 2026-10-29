@@ -133,3 +133,38 @@ export type NavTab =
   | "Work Logs"
   | "Learning Tracker"
   | "Settings";
+
+export type ThemeMode = "dark" | "light" | "system";
+export type AccentColor = "violet" | "indigo" | "emerald" | "blue" | "amber" | "rose";
+export type DateFormatOption = "YYYY-MM-DD" | "MM/DD/YYYY" | "DD/MM/YYYY";
+export type TimeFormatOption = "12h" | "24h";
+export type TaskViewOption = "List" | "Grid";
+export type TaskSortOption = "priority" | "due_date" | "created_at" | "title";
+export type AIResponseStyle = "concise" | "balanced" | "detailed";
+
+export interface UserSettings {
+  user_id?: string;
+  theme: ThemeMode;
+  accent_color: AccentColor;
+  date_format: DateFormatOption;
+  time_format: TimeFormatOption;
+  preferred_language: string;
+  default_task_priority: Priority;
+  default_task_view: TaskViewOption;
+  default_task_sort: TaskSortOption;
+  default_landing: string;
+  response_style: AIResponseStyle;
+  sidebar_collapsed: boolean;
+  compact_density: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserDataStats {
+  tasksCount: number;
+  projectsCount: number;
+  snippetsCount: number;
+  workLogsCount: number;
+  learningEntriesCount: number;
+}
+

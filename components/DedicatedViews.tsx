@@ -335,37 +335,5 @@ export function DedicatedViews({
     );
   }
 
-  if (activeTab === "Settings") {
-    return (
-      <div className="rounded-xl border border-white/5 bg-[#121217] p-5 space-y-4 max-w-2xl">
-        <div>
-          <h2 className="text-base font-semibold text-white">Workspace Settings</h2>
-          <p className="text-xs text-zinc-500">Configure theme, keyboard shortcuts, and local storage</p>
-        </div>
-        <div className="space-y-3 text-xs">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
-            <div>
-              <p className="font-medium text-zinc-200">Theme Preference</p>
-              <p className="text-[11px] text-zinc-500">Dark violet SaaS aesthetic</p>
-            </div>
-            <span className="rounded bg-violet-600/20 border border-violet-500/30 px-2 py-1 text-violet-300 font-mono">
-              Dark Mode (Active)
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/5">
-            <div>
-              <p className="font-medium text-zinc-200">Database Connection</p>
-              <p className="text-[11px] text-zinc-500">Mock Data / In-memory state</p>
-            </div>
-            <span className="rounded bg-amber-500/20 border border-amber-500/30 px-2 py-1 text-amber-300 font-mono">
-              Offline Mock Mode
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return null;
 }

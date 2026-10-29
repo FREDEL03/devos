@@ -380,3 +380,49 @@ create trigger tr_git_templates_updated_at
   before update on public.git_templates
   for each row execute function public.handle_updated_at();
 
+-- ==============================================================================
+-- TABLE: user_settings
+-- ==============================================================================
+create table if not exists public.user_settings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  theme text not null default 'dark' check (theme in ('dark', 'light', 'system')),
+  accent_color text not null default 'violet' check (accent_color in ('violet', 'indigo', 'emerald', 'blue', 'amber', 'rose')),
+  date_format text not null default 'YYYY-MM-DD' check (date_format in ('YYYY-MM-DD', 'MM/DD/YYYY', 'DD/MM/YYYY')),
+  time_format text not null default '12h' check (time_format in ('12h', '24h')),
+  preferred_language text not null default 'TypeScript',
+  default_task_priority text not null default 'Medium' check (default_task_priority in ('Low', 'Medium', 'High')),
+  default_task_view text not null default 'List' check (default_task_view in ('List', 'Grid')),
+  default_task_sort text not null default 'priority' check (default_task_sort in ('priority', 'due_date', 'created_at', 'title')),
+  default_landing text not null default 'Dashboard',
+  response_style text not null default 'balanced' check (response_style in ('concise', 'balanced', 'detailed')),
+  sidebar_collapsed boolean not null default false,
+  compact_density boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_settings enable row level security;
+
+drop policy if exists "Users can view own settings" on public.user_settings;
+create policy "Users can view own settings"
+  on public.user_settings for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert own settings" on public.user_settings;
+create policy "Users can insert own settings"
+  on public.user_settings for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update own settings" on public.user_settings;
+create policy "Users can update own settings"
+  on public.user_settings for update
+  using (auth.uid() = user_id);
+
+create index if not exists idx_user_settings_user_id on public.user_settings(user_id);
+
+drop trigger if exists tr_user_settings_updated_at on public.user_settings;
+create trigger tr_user_settings_updated_at
+  before update on public.user_settings
+  for each row execute function public.handle_updated_at();
+
+

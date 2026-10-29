@@ -29,11 +29,26 @@ export async function POST(req: Request) {
 
     const taskType = body.taskType || "general_query";
 
-    // 3. Call server-side Gemini service
+    // 3. Retrieve user's configured AI response style if not explicitly overridden
+    let responseStyle = body.responseStyle;
+    if (!responseStyle) {
+      const { data: userSettings } = await supabase
+        .from("user_settings")
+        .select("response_style")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (userSettings?.response_style) {
+        responseStyle = userSettings.response_style;
+      }
+    }
+
+    // 4. Call server-side Gemini service with preferred style
     const result = await callGemini({
       taskType,
       prompt: body.prompt,
       contextCode: body.contextCode,
+      responseStyle,
     });
 
     return NextResponse.json(result);

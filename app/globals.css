@@ -9,6 +9,44 @@
   --accent-hover: #7c3aed;
 }
 
+html.light {
+  --background: #f8fafc;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+html[data-accent="indigo"] {
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+}
+html[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-hover: #059669;
+}
+html[data-accent="blue"] {
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+}
+html[data-accent="amber"] {
+  --accent: #f59e0b;
+  --accent-hover: #d97706;
+}
+html[data-accent="rose"] {
+  --accent: #f43f5e;
+  --accent-hover: #e11d48;
+}
+
+html.compact {
+  font-size: 13.5px;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);

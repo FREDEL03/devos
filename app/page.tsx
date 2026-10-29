@@ -5,8 +5,9 @@ import { getProjects } from "@/app/projects/actions";
 import { getSnippets } from "@/app/snippets/actions";
 import { getWorkLogs } from "@/app/work-logs/actions";
 import { getLearningEntries } from "@/app/learning/actions";
+import { getUserSettings, DEFAULT_USER_SETTINGS } from "@/app/settings/actions";
 import { DashboardClient } from "@/components/DashboardClient";
-import { Task, Project, CodeSnippet, WorkLog, LearningEntry } from "@/components/types";
+import { Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings } from "@/components/types";
 
 export const instant = false;
 
@@ -27,20 +28,23 @@ export default async function HomePage() {
   let dbSnippets: CodeSnippet[] = [];
   let dbWorkLogs: WorkLog[] = [];
   let dbLearningEntries: LearningEntry[] = [];
+  let dbSettings: UserSettings = { ...DEFAULT_USER_SETTINGS, user_id: user.id };
 
   try {
-    const [tasksRes, projectsRes, snippetsRes, workLogsRes, learningRes] = await Promise.all([
+    const [tasksRes, projectsRes, snippetsRes, workLogsRes, learningRes, settingsRes] = await Promise.all([
       getTasks().catch(() => []),
       getProjects().catch(() => []),
       getSnippets().catch(() => []),
       getWorkLogs().catch(() => []),
       getLearningEntries().catch(() => []),
+      getUserSettings().catch(() => ({ ...DEFAULT_USER_SETTINGS, user_id: user.id })),
     ]);
     dbTasks = tasksRes;
     dbProjects = projectsRes;
     dbSnippets = snippetsRes;
     dbWorkLogs = workLogsRes;
     dbLearningEntries = learningRes;
+    dbSettings = settingsRes;
   } catch (err) {
     console.error("Error loading dashboard data:", err);
   }
@@ -59,6 +63,7 @@ export default async function HomePage() {
       initialDbSnippets={dbSnippets}
       initialDbWorkLogs={dbWorkLogs}
       initialDbLearningEntries={dbLearningEntries}
+      initialDbSettings={dbSettings}
     />
   );
 }
