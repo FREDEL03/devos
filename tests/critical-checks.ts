@@ -3,17 +3,36 @@
  * Pure Node.js assert-based verification.
  */
 import assert from "node:assert";
-import { generateBranchName, generateCommitMessage, generatePRTitle } from "../lib/git/generator";
+import {
+  generateBranchName,
+  generateCommitMessage,
+  generatePrTitle,
+  __runGitGeneratorSelfCheck,
+} from "../lib/git/generator";
 import { SUPPORTED_TASK_TYPES, __runGeminiValidationSelfCheck } from "../lib/ai/gemini";
 
 console.log("▶ [Test 1] Git Generator Rules...");
-const branch = generateBranchName("feat", "DEV-101", "Supabase Session Token Refresh");
+assert.strictEqual(__runGitGeneratorSelfCheck(), true);
+
+const branch = generateBranchName({
+  changeType: "feat",
+  ticketId: "DEV-101",
+  ticketTitle: "Supabase Session Token Refresh",
+});
 assert.strictEqual(branch, "feat/DEV-101-supabase-session-token-refresh");
 
-const commit = generateCommitMessage("fix", "auth", "resolve token refresh redirect loop", false, "");
+const commit = generateCommitMessage({
+  changeType: "fix",
+  scope: "auth",
+  ticketTitle: "resolve token refresh redirect loop",
+});
 assert.strictEqual(commit, "fix(auth): resolve token refresh redirect loop");
 
-const pr = generatePRTitle("feat", "DEV-101", "add daily work logs");
+const pr = generatePrTitle({
+  changeType: "feat",
+  ticketId: "DEV-101",
+  ticketTitle: "add daily work logs",
+});
 assert.strictEqual(pr, "feat(DEV-101): add daily work logs");
 console.log("✓ Git Generator passed.");
 
@@ -47,4 +66,4 @@ assert.ok(!sanitized.includes("AQ.TEST_DUMMY_KEY_FOR_UNIT_TEST_ONLY_12345"));
 assert.ok(sanitized.includes("[REDACTED_API_KEY]"));
 console.log("✓ API key redaction passed.");
 
-console.log("\n All 4 Critical Logic & Security Checks Passed Successfully!");
+console.log("\n All Critical Logic & Security Checks Passed Successfully!");

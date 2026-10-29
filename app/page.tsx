@@ -6,6 +6,9 @@ import { getSnippets } from "@/app/snippets/actions";
 import { getWorkLogs } from "@/app/work-logs/actions";
 import { getLearningEntries } from "@/app/learning/actions";
 import { DashboardClient } from "@/components/DashboardClient";
+import { Task, Project, CodeSnippet, WorkLog, LearningEntry } from "@/components/types";
+
+export const instant = false;
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -19,11 +22,11 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  let dbTasks = [];
-  let dbProjects = [];
-  let dbSnippets = [];
-  let dbWorkLogs = [];
-  let dbLearningEntries = [];
+  let dbTasks: Task[] = [];
+  let dbProjects: Project[] = [];
+  let dbSnippets: CodeSnippet[] = [];
+  let dbWorkLogs: WorkLog[] = [];
+  let dbLearningEntries: LearningEntry[] = [];
 
   try {
     const [tasksRes, projectsRes, snippetsRes, workLogsRes, learningRes] = await Promise.all([

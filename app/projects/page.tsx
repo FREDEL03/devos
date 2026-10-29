@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProjects } from "./actions";
 import { ProjectsPageClient } from "@/components/ProjectsPageClient";
+import { Project } from "@/components/types";
+
+export const instant = false;
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -13,7 +16,7 @@ export default async function ProjectsPage() {
     redirect("/login");
   }
 
-  let dbProjects = [];
+  let dbProjects: Project[] = [];
   try {
     dbProjects = await getProjects();
   } catch (err) {

@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getWorkLogs } from "./actions";
 import { getProjects } from "@/app/projects/actions";
 import { WorkLogsPageClient } from "@/components/WorkLogsPageClient";
+import { WorkLog, Project } from "@/components/types";
+
+export const instant = false;
 
 export default async function WorkLogsPage() {
   const supabase = await createClient();
@@ -14,14 +17,14 @@ export default async function WorkLogsPage() {
     redirect("/login");
   }
 
-  let dbLogs = [];
+  let dbLogs: WorkLog[] = [];
   try {
     dbLogs = await getWorkLogs();
   } catch (err) {
     console.error("Failed to fetch work logs on server:", err);
   }
 
-  let dbProjects = [];
+  let dbProjects: Project[] = [];
   try {
     dbProjects = await getProjects();
   } catch (err) {

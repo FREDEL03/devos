@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AIAssistantPageClient } from "@/components/AIAssistantPageClient";
 
+export const instant = false;
+
 export default async function AIAssistantPage() {
   const supabase = await createClient();
   const {

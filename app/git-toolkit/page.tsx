@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getGitTemplates } from "./actions";
 import { GitToolkitPageClient } from "@/components/GitToolkitPageClient";
+import { GitTemplate } from "@/components/types";
+
+export const instant = false;
 
 export default async function GitToolkitPage() {
   const supabase = await createClient();
@@ -13,7 +16,7 @@ export default async function GitToolkitPage() {
     redirect("/login");
   }
 
-  let dbTemplates = [];
+  let dbTemplates: GitTemplate[] = [];
   try {
     dbTemplates = await getGitTemplates();
   } catch (err) {

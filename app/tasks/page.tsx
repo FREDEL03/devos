@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getTasks } from "./actions";
 import { getProjects } from "@/app/projects/actions";
 import { TasksPageClient } from "@/components/TasksPageClient";
+import { Task, Project } from "@/components/types";
+
+export const instant = false;
 
 export default async function TasksPage() {
   const supabase = await createClient();
@@ -14,8 +17,8 @@ export default async function TasksPage() {
     redirect("/login");
   }
 
-  let dbTasks = [];
-  let dbProjects = [];
+  let dbTasks: Task[] = [];
+  let dbProjects: Project[] = [];
   try {
     const [tasksRes, projectsRes] = await Promise.all([
       getTasks().catch(() => []),

@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLearningEntries } from "./actions";
 import { LearningPageClient } from "@/components/LearningPageClient";
+import { LearningEntry } from "@/components/types";
+
+export const instant = false;
 
 export default async function LearningPage() {
   const supabase = await createClient();
@@ -13,7 +16,7 @@ export default async function LearningPage() {
     redirect("/login");
   }
 
-  let dbEntries = [];
+  let dbEntries: LearningEntry[] = [];
   try {
     dbEntries = await getLearningEntries();
   } catch (err) {

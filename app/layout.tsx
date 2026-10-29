@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Personal developer workspace, task tracking, and project dashboard",
 };
 
+export const instant = false;
+
 export default function RootLayout({
   children,
 }: Readonly<{

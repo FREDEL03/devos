@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSnippets } from "./actions";
 import { SnippetsPageClient } from "@/components/SnippetsPageClient";
+import { CodeSnippet } from "@/components/types";
+
+export const instant = false;
 
 export default async function SnippetsPage() {
   const supabase = await createClient();
@@ -13,7 +16,7 @@ export default async function SnippetsPage() {
     redirect("/login");
   }
 
-  let dbSnippets = [];
+  let dbSnippets: CodeSnippet[] = [];
   try {
     dbSnippets = await getSnippets();
   } catch (err) {
