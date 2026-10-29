@@ -14,6 +14,8 @@ import {
 import { LearningEntry, LearningCategory, LearningStatus } from "./types";
 import { LearningCard } from "./LearningCard";
 import { LearningModal } from "./LearningModal";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 import {
   createLearningEntry,
   updateLearningEntry,
@@ -96,26 +98,43 @@ export function LearningManager({ initialEntries }: LearningManagerProps) {
     if (id) {
       const res = await updateLearningEntry(id, input);
       if (res.error || !res.data) {
+        toast.error("Failed to update topic", { description: res.error });
         return { success: false, error: res.error || "Failed to update topic" };
       }
       setEntries((prev) => prev.map((item) => (item.id === id ? res.data! : item)));
+      toast.success("Learning topic updated", { description: `"${input.title}" updated.` });
       return { success: true };
     } else {
       const res = await createLearningEntry(input);
       if (res.error || !res.data) {
+        toast.error("Failed to create topic", { description: res.error });
         return { success: false, error: res.error || "Failed to create topic" };
       }
       setEntries((prev) => [res.data!, ...prev]);
+      toast.success("Learning topic created", { description: `"${input.title}" tracked.` });
       return { success: true };
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteLearningEntry(id);
-    if (res.success) {
+    const target = entries.find((e) => e.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Delete "${target.title}"?` : "Delete learning topic?",
+      description: "This learning topic will be permanently removed. This action cannot be undone.",
+      confirmText: "Delete Topic",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteLearningEntry(id);
+        if (!res.success) {
+          throw new Error(res.error || "Failed to delete topic");
+        }
+      },
+    });
+
+    if (confirmed) {
       setEntries((prev) => prev.filter((e) => e.id !== id));
-    } else {
-      alert(res.error || "Failed to delete topic");
+      toast.success("Learning topic deleted", { description: "Topic removed from tracker." });
     }
   };
 
@@ -131,6 +150,12 @@ export function LearningManager({ initialEntries }: LearningManagerProps) {
 
     if (res.data) {
       setEntries((prev) => prev.map((e) => (e.id === entry.id ? res.data! : e)));
+      toast.success(
+        isCompleted ? "Marked in progress" : "Topic completed!",
+        { description: `"${entry.title}" is now ${nextStatus.toLowerCase()}.` }
+      );
+    } else if (res.error) {
+      toast.error("Failed to update status", { description: res.error });
     }
   };
 

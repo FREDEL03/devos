@@ -20,19 +20,6 @@ interface WorkLogCardProps {
 }
 
 export function WorkLogCard({ log, onEdit, onDelete }: WorkLogCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await onDelete(log.id);
-    } finally {
-      setIsDeleting(false);
-      setShowConfirm(false);
-    }
-  };
-
   // Format date readable
   let displayDate = log.entry_date;
   try {
@@ -82,45 +69,22 @@ export function WorkLogCard({ log, onEdit, onDelete }: WorkLogCardProps) {
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
-          {showConfirm ? (
-            <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg p-1">
-              <span className="text-[11px] text-rose-300 px-1 font-medium">Delete log?</span>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-rose-500 disabled:opacity-50"
-              >
-                {isDeleting ? "..." : "Yes"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirm(false)}
-                className="rounded px-1.5 py-0.5 text-[11px] text-zinc-400 hover:text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => onEdit(log)}
-                className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-                title="Edit log"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirm(true)}
-                className="rounded-lg p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                title="Delete log"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={() => onEdit(log)}
+            className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+            title="Edit log"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(log.id)}
+            className="rounded-lg p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            title="Delete log"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 

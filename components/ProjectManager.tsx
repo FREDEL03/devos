@@ -12,6 +12,8 @@ import {
 import { Project, ProjectStatus } from "./types";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectModal } from "./ProjectModal";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 import {
   createProject,
   updateProject,
@@ -35,18 +37,12 @@ export function ProjectManager({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [, startTransition] = useTransition();
 
   const syncProjects = (updated: Project[]) => {
     setProjects(updated);
     onProjectsChange?.(updated);
-  };
-
-  const showNotification = (type: "success" | "error", text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 3000);
   };
 
   // Create / Update
@@ -73,16 +69,16 @@ export function ProjectManager({
 
       const res = await updateProject(editingProject.id, data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to update project", { description: res.error });
         syncProjects(projects);
         return { error: res.error };
       }
-      showNotification("success", "Project updated successfully.");
+      toast.success("Project updated", { description: `Changes to "${data.name}" were saved.` });
     } else {
       // Create project
       const res = await createProject(data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to create project", { description: res.error });
         return { error: res.error };
       }
       if (res?.data) {
@@ -104,43 +100,59 @@ export function ProjectManager({
           completed_tasks_count: 0,
         };
         syncProjects([created, ...projects]);
+        toast.success("Project created", { description: `"${created.name}" created in Supabase.` });
       }
-      showNotification("success", "Project created in Supabase.");
     }
   };
 
   const handleArchive = async (id: string) => {
-    // Optimistic archive
-    const previous = projects;
-    syncProjects(
-      projects.map((p) => (p.id === id ? { ...p, status: "Archived" } : p))
-    );
-
-    startTransition(async () => {
-      const res = await archiveProject(id);
-      if (res?.error) {
-        showNotification("error", `Failed to archive: ${res.error}`);
-        syncProjects(previous);
-      } else {
-        showNotification("success", "Project archived.");
-      }
+    const target = projects.find((p) => p.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Archive "${target.name}"?` : "Archive project?",
+      description: "This project will be marked as Archived. You can reactivate or edit it at any time.",
+      confirmText: "Archive Project",
+      cancelText: "Cancel",
+      variant: "warning",
+      onConfirm: async () => {
+        const res = await archiveProject(id);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      },
     });
+
+    if (confirmed) {
+      syncProjects(
+        projects.map((p) => (p.id === id ? { ...p, status: "Archived" } : p))
+      );
+      toast.success("Project archived", {
+        description: `"${target?.name || "Project"}" has been archived.`,
+      });
+    }
   };
 
   const handleDelete = async (id: string) => {
-    // Optimistic delete
-    const previous = projects;
-    syncProjects(projects.filter((p) => p.id !== id));
-
-    startTransition(async () => {
-      const res = await deleteProject(id);
-      if (res?.error) {
-        showNotification("error", `Failed to delete project: ${res.error}`);
-        syncProjects(previous);
-      } else {
-        showNotification("success", "Project deleted.");
-      }
+    const target = projects.find((p) => p.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Delete "${target.name}"?` : "Delete project?",
+      description: "This will permanently remove the project and its roadmap metadata. This action cannot be undone.",
+      confirmText: "Delete Project",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteProject(id);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      },
     });
+
+    if (confirmed) {
+      syncProjects(projects.filter((p) => p.id !== id));
+      toast.success("Project deleted", {
+        description: "The project was permanently deleted.",
+      });
+    }
   };
 
   const handleOpenEdit = (project: Project) => {
@@ -198,24 +210,6 @@ export function ProjectManager({
           <span>New Project</span>
         </button>
       </div>
-
-      {/* Notification toast */}
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-lg p-3 text-xs transition-all ${
-            feedback.type === "success"
-              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
-              : "bg-rose-500/10 text-rose-300 border border-rose-500/30"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <Check className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <X className="w-4 h-4 text-rose-400" />
-          )}
-          <span>{feedback.text}</span>
-        </div>
-      )}
 
       {/* Search and Status Filters */}
       <div className="rounded-xl border border-white/5 bg-[#121217] p-4 space-y-3">

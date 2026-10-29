@@ -45,8 +45,6 @@ export function LearningCard({
   onQuickToggleComplete,
 }: LearningCardProps) {
   const [showNotes, setShowNotes] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const catStyle = CATEGORY_COLORS[entry.category] || {
     bg: "bg-zinc-800",
@@ -56,16 +54,6 @@ export function LearningCard({
 
   const statusStyle = STATUS_CONFIG[entry.status] || STATUS_CONFIG["In Progress"];
   const mastery = entry.mastery_percentage ?? 0;
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await onDelete(entry.id);
-    } finally {
-      setIsDeleting(false);
-      setShowConfirm(false);
-    }
-  };
 
   return (
     <div className="rounded-xl border border-white/5 bg-[#121217] p-4 sm:p-5 flex flex-col justify-between hover:border-white/10 transition-all group">
@@ -94,57 +82,34 @@ export function LearningCard({
 
           {/* Action buttons */}
           <div className="flex items-center gap-1">
-            {showConfirm ? (
-              <div className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg p-1">
-                <span className="text-[11px] text-rose-300 font-medium">Delete?</span>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="rounded bg-rose-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-rose-500 disabled:opacity-50"
-                >
-                  {isDeleting ? "..." : "Yes"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(false)}
-                  className="rounded px-1.5 py-0.5 text-[11px] text-zinc-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onQuickToggleComplete(entry)}
-                  className={`rounded-lg p-1.5 transition-colors ${
-                    entry.status === "Completed"
-                      ? "text-emerald-400 hover:bg-emerald-500/10"
-                      : "text-zinc-500 hover:text-emerald-400 hover:bg-white/5"
-                  }`}
-                  title={entry.status === "Completed" ? "Mark as In Progress" : "Mark as Completed"}
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onEdit(entry)}
-                  className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-                  title="Edit topic"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(true)}
-                  className="rounded-lg p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                  title="Delete topic"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => onQuickToggleComplete(entry)}
+              className={`rounded-lg p-1.5 transition-colors ${
+                entry.status === "Completed"
+                  ? "text-emerald-400 hover:bg-emerald-500/10"
+                  : "text-zinc-500 hover:text-emerald-400 hover:bg-white/5"
+              }`}
+              title={entry.status === "Completed" ? "Mark as In Progress" : "Mark as Completed"}
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onEdit(entry)}
+              className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+              title="Edit topic"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(entry.id)}
+              className="rounded-lg p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              title="Delete topic"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 

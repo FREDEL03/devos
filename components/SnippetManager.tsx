@@ -13,6 +13,8 @@ import {
 import { CodeSnippet } from "./types";
 import { SnippetCard } from "./SnippetCard";
 import { SnippetModal } from "./SnippetModal";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 import {
   createSnippet,
   updateSnippet,
@@ -50,18 +52,12 @@ export function SnippetManager({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<CodeSnippet | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [, startTransition] = useTransition();
 
   const syncSnippets = (updated: CodeSnippet[]) => {
     setSnippets(updated);
     onSnippetsChange?.(updated);
-  };
-
-  const showNotification = (type: "success" | "error", text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 3000);
   };
 
   // Collect all unique tags
@@ -94,16 +90,16 @@ export function SnippetManager({
 
       const res = await updateSnippet(editingSnippet.id, data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to update snippet", { description: res.error });
         syncSnippets(snippets);
         return { error: res.error };
       }
-      showNotification("success", "Snippet updated in Supabase.");
+      toast.success("Snippet updated", { description: `Changes to "${data.title}" saved.` });
     } else {
       // Create new snippet
       const res = await createSnippet(data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to save snippet", { description: res.error });
         return { error: res.error };
       }
       if (res?.data) {
@@ -119,25 +115,32 @@ export function SnippetManager({
           updated_at: res.data.updated_at,
         };
         syncSnippets([created, ...snippets]);
+        toast.success("Snippet saved", { description: `"${created.title}" added to your library.` });
       }
-      showNotification("success", "Snippet saved in Supabase.");
     }
   };
 
   // Handle Delete
   const handleDelete = async (id: string) => {
-    const previous = snippets;
-    syncSnippets(snippets.filter((s) => s.id !== id));
-
-    startTransition(async () => {
-      const res = await deleteSnippet(id);
-      if (res?.error) {
-        showNotification("error", `Failed to delete snippet: ${res.error}`);
-        syncSnippets(previous);
-      } else {
-        showNotification("success", "Snippet deleted from Supabase.");
-      }
+    const target = snippets.find((s) => s.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Delete "${target.title}"?` : "Delete snippet?",
+      description: "This code snippet will be permanently deleted from your library. This action cannot be undone.",
+      confirmText: "Delete Snippet",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteSnippet(id);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      },
     });
+
+    if (confirmed) {
+      syncSnippets(snippets.filter((s) => s.id !== id));
+      toast.success("Snippet deleted", { description: "The snippet was removed from your library." });
+    }
   };
 
   const handleOpenEdit = (snippet: CodeSnippet) => {
@@ -196,24 +199,6 @@ export function SnippetManager({
           <span>New Snippet</span>
         </button>
       </div>
-
-      {/* Notification Toast */}
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-lg p-3 text-xs transition-all ${
-            feedback.type === "success"
-              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
-              : "bg-rose-500/10 text-rose-300 border border-rose-500/30"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <Check className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <X className="w-4 h-4 text-rose-400" />
-          )}
-          <span>{feedback.text}</span>
-        </div>
-      )}
 
       {/* Filter and Search Bar */}
       <div className="rounded-xl border border-white/5 bg-[#121217] p-4 space-y-3">

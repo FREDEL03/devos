@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { Flame, ArrowUpRight, Check } from "@/components/icons";
 import { signup } from "@/app/auth/actions";
+import { toast } from "@/components/Toast";
 
 export default function SignupPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -20,12 +21,16 @@ export default function SignupPage() {
     const confirmPassword = formData.get("confirmPassword") as string;
 
     if (password.length < 6) {
-      setErrorMessage("Password must be at least 6 characters.");
+      const err = "Password must be at least 6 characters.";
+      setErrorMessage(err);
+      toast.error(err);
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match.");
+      const err = "Passwords do not match.";
+      setErrorMessage(err);
+      toast.error(err);
       return;
     }
 
@@ -33,8 +38,10 @@ export default function SignupPage() {
       const res = await signup(formData);
       if (res?.error) {
         setErrorMessage(res.error);
+        toast.error("Registration failed", { description: res.error });
       } else if (res?.success) {
         setSuccessMessage(res.success);
+        toast.success("Account created", { description: res.success });
       }
     });
   };

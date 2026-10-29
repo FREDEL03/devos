@@ -17,9 +17,6 @@ export function TaskCard({
   onEdit,
   onDelete,
 }: TaskCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
       case "High":
@@ -52,11 +49,6 @@ export function TaskCard({
 
   const statusInfo = getStatusBadge(task.status, task.completed);
   const displayDueDate = task.due_date || task.dueDate;
-
-  const handleDelete = () => {
-    setIsDeleting(true);
-    onDelete(task.id);
-  };
 
   return (
     <div
@@ -138,43 +130,22 @@ export function TaskCard({
 
       {/* Action buttons (Edit & Delete) */}
       <div className="mt-3.5 pt-2.5 border-t border-white/5 flex items-center justify-end gap-1 pl-7">
-        {showConfirmDelete ? (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-400 text-[11px]">Delete task?</span>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="rounded bg-rose-600/30 border border-rose-500/40 px-2 py-0.5 text-[11px] text-rose-300 hover:bg-rose-600/40"
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setShowConfirmDelete(false)}
-              className="rounded bg-white/5 px-2 py-0.5 text-[11px] text-zinc-400 hover:text-white"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => onEdit(task)}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-              title="Edit task"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              <span>Edit</span>
-            </button>
-            <button
-              onClick={() => setShowConfirmDelete(true)}
-              className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-              title="Delete task"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete</span>
-            </button>
-          </>
-        )}
+        <button
+          onClick={() => onEdit(task)}
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+          title="Edit task"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          <span>Edit</span>
+        </button>
+        <button
+          onClick={() => onDelete(task.id)}
+          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+          title="Delete task"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Delete</span>
+        </button>
       </div>
     </div>
   );

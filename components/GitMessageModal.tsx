@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X, GitBranch, Copy, Check } from "./icons";
+import { toast } from "./Toast";
 
 interface GitMessageModalProps {
   isOpen: boolean;
@@ -27,10 +28,20 @@ export function GitMessageModal({ isOpen, onClose }: GitMessageModalProps) {
 
   const generatedCommit = `${type}${scope.trim() ? `(${scope.trim()})` : ""}: ${description.trim() || "update implementation"}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedCommit);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedCommit);
+      setCopied(true);
+      toast.success("Commit message copied", {
+        description: "Formatted conventional commit copied to clipboard.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy commit message", {
+        description: "Clipboard access was denied.",
+      });
+      console.error("Clipboard copy failed:", err);
+    }
   };
 
   return (

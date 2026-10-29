@@ -24,9 +24,6 @@ export function ProjectCard({
   onArchive,
   onDelete,
 }: ProjectCardProps) {
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const getStatusBadge = (status: ProjectStatus) => {
     switch (status) {
       case "Planning":
@@ -47,11 +44,6 @@ export function ProjectCard({
     project.technologies ||
     project.technology ||
     [];
-
-  const handleDelete = () => {
-    setIsDeleting(true);
-    onDelete(project.id);
-  };
 
   const hasTasks = typeof project.tasks_count === "number" && project.tasks_count > 0;
 
@@ -149,55 +141,34 @@ export function ProjectCard({
 
         {/* Actions row */}
         <div className="flex items-center justify-end gap-1 text-xs">
-          {showConfirmDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-400 text-[11px]">Delete project?</span>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="rounded bg-rose-600/30 border border-rose-500/40 px-2 py-0.5 text-[11px] text-rose-300 hover:bg-rose-600/40"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setShowConfirmDelete(false)}
-                className="rounded bg-white/5 px-2 py-0.5 text-[11px] text-zinc-400 hover:text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                onClick={() => onEdit(project)}
-                className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-                title="Edit project"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                <span>Edit</span>
-              </button>
+          <button
+            onClick={() => onEdit(project)}
+            className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+            title="Edit project"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            <span>Edit</span>
+          </button>
 
-              {project.status !== "Archived" && (
-                <button
-                  onClick={() => onArchive(project.id)}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
-                  title="Archive project"
-                >
-                  <Archive className="w-3.5 h-3.5" />
-                  <span>Archive</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => setShowConfirmDelete(true)}
-                className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                title="Delete project"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
-              </button>
-            </>
+          {project.status !== "Archived" && (
+            <button
+              onClick={() => onArchive(project.id)}
+              className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+              title="Archive project"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span>Archive</span>
+            </button>
           )}
+
+          <button
+            onClick={() => onDelete(project.id)}
+            className="flex items-center gap-1 rounded px-2 py-1 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+            title="Delete project"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete</span>
+          </button>
         </div>
       </div>
     </div>

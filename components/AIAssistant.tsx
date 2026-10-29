@@ -14,6 +14,8 @@ import {
   RotateCcw,
 } from "./icons";
 import { AITaskType, SUPPORTED_TASK_TYPES } from "@/lib/ai/gemini";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 
 interface Message {
   id: string;
@@ -106,9 +108,25 @@ export function AIAssistant() {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
+      toast.success("Copied to clipboard", { description: "AI response copied." });
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
+      toast.error("Failed to copy", { description: "Clipboard permission denied." });
       console.error("Copy failed:", err);
+    }
+  };
+
+  const handleClearSession = async () => {
+    const confirmed = await confirmDialog({
+      title: "Clear AI session history?",
+      description: "All messages in this session will be cleared.",
+      confirmText: "Clear History",
+      cancelText: "Keep",
+      variant: "warning",
+    });
+    if (confirmed) {
+      setMessages([]);
+      toast.info("Session cleared");
     }
   };
 
@@ -165,6 +183,7 @@ export function AIAssistant() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to communicate with AI Assistant.";
       setError(msg);
+      toast.error("AI Assistant Error", { description: msg });
     } finally {
       setLoading(false);
     }
@@ -201,7 +220,7 @@ export function AIAssistant() {
         {messages.length > 0 && (
           <button
             type="button"
-            onClick={() => setMessages([])}
+            onClick={handleClearSession}
             className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />

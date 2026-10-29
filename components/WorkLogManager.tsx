@@ -14,6 +14,8 @@ import {
 import { WorkLog, Project } from "./types";
 import { WorkLogCard } from "./WorkLogCard";
 import { WorkLogModal } from "./WorkLogModal";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 import {
   createWorkLog,
   updateWorkLog,
@@ -84,27 +86,44 @@ export function WorkLogManager({ initialLogs, projects }: WorkLogManagerProps) {
       // Edit
       const res = await updateWorkLog(id, input);
       if (res.error || !res.data) {
+        toast.error("Failed to update work log", { description: res.error });
         return { success: false, error: res.error || "Failed to update log" };
       }
       setLogs((prev) => prev.map((item) => (item.id === id ? res.data! : item)));
+      toast.success("Work log updated", { description: `"${input.title}" updated successfully.` });
       return { success: true };
     } else {
       // Create
       const res = await createWorkLog(input);
       if (res.error || !res.data) {
+        toast.error("Failed to create work log", { description: res.error });
         return { success: false, error: res.error || "Failed to create log" };
       }
       setLogs((prev) => [res.data!, ...prev]);
+      toast.success("Work log created", { description: `"${input.title}" logged.` });
       return { success: true };
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteWorkLog(id);
-    if (res.success) {
+    const target = logs.find((l) => l.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Delete "${target.title}"?` : "Delete work log?",
+      description: "This daily work log will be permanently deleted. This action cannot be undone.",
+      confirmText: "Delete Log",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteWorkLog(id);
+        if (!res.success) {
+          throw new Error(res.error || "Failed to delete log");
+        }
+      },
+    });
+
+    if (confirmed) {
       setLogs((prev) => prev.filter((l) => l.id !== id));
-    } else {
-      alert(res.error || "Failed to delete log");
+      toast.success("Work log deleted", { description: "The daily log was deleted." });
     }
   };
 

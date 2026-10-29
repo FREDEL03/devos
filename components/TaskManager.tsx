@@ -13,6 +13,8 @@ import {
 import { Priority, Task, TaskStatus, Project } from "./types";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 import {
   createTask,
   updateTask,
@@ -39,18 +41,12 @@ export function TaskManager({
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [isPending, startTransition] = useTransition();
 
   const syncTasks = (newTasks: Task[]) => {
     setTasks(newTasks);
     onTasksChange?.(newTasks);
-  };
-
-  const showNotification = (type: "success" | "error", text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 3000);
   };
 
   // Handlers
@@ -75,17 +71,17 @@ export function TaskManager({
 
       const res = await updateTask(editingTask.id, data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to update task", { description: res.error });
         // revert
         syncTasks(tasks);
         return { error: res.error };
       }
-      showNotification("success", "Task updated successfully.");
+      toast.success("Task updated", { description: `Changes to "${data.title}" were saved.` });
     } else {
       // Server create
       const res = await createTask(data);
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to create task", { description: res.error });
         return { error: res.error };
       }
       if (res?.data) {
@@ -103,8 +99,8 @@ export function TaskManager({
           updated_at: res.data.updated_at,
         };
         syncTasks([created, ...tasks]);
+        toast.success("Task created", { description: `"${created.title}" added to your workspace.` });
       }
-      showNotification("success", "Task created in Supabase.");
     }
   };
 
@@ -121,27 +117,35 @@ export function TaskManager({
     startTransition(async () => {
       const res = await updateTask(id, { completed: nextCompleted, status: nextStatus });
       if (res?.error) {
-        showNotification("error", `Failed to update task: ${res.error}`);
+        toast.error("Failed to update task", { description: res.error });
         // revert
         syncTasks(tasks);
+      } else {
+        toast.info(nextCompleted ? "Task marked completed" : "Task reopened");
       }
     });
   };
 
   const handleDeleteTask = async (id: string) => {
-    // Optimistic delete
-    const previous = tasks;
-    syncTasks(tasks.filter((t) => t.id !== id));
-
-    startTransition(async () => {
-      const res = await deleteTask(id);
-      if (res?.error) {
-        showNotification("error", `Failed to delete task: ${res.error}`);
-        syncTasks(previous);
-      } else {
-        showNotification("success", "Task deleted.");
-      }
+    const target = tasks.find((t) => t.id === id);
+    const confirmed = await confirmDialog({
+      title: target ? `Delete "${target.title}"?` : "Delete task?",
+      description: "This task will be permanently removed from your workspace. This action cannot be undone.",
+      confirmText: "Delete Task",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteTask(id);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      },
     });
+
+    if (confirmed) {
+      syncTasks(tasks.filter((t) => t.id !== id));
+      toast.success("Task deleted", { description: "The task was successfully removed." });
+    }
   };
 
   const handleOpenEdit = (task: Task) => {
@@ -231,24 +235,6 @@ export function TaskManager({
           <span>New Task</span>
         </button>
       </div>
-
-      {/* Notification toast */}
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-lg p-3 text-xs transition-all ${
-            feedback.type === "success"
-              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
-              : "bg-rose-500/10 text-rose-300 border border-rose-500/30"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <Check className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <X className="w-4 h-4 text-rose-400" />
-          )}
-          <span>{feedback.text}</span>
-        </div>
-      )}
 
       {/* Controls Bar: Search, Filters, Sorting */}
       <div className="rounded-xl border border-white/5 bg-[#121217] p-4 space-y-3">

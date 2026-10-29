@@ -90,4 +90,56 @@ assert.ok(validSorts.includes("priority"));
 assert.ok(validResponseStyles.includes("balanced"));
 console.log("✓ Settings constraints verified.");
 
+console.log("▶ [Test 6] Toast Store & Deduplication Logic...");
+import { toast, getToasts, dismissToast, clearToasts } from "../components/Toast";
+clearToasts();
+assert.strictEqual(getToasts().length, 0);
+
+toast.success("Task completed", { description: "Great work!" });
+assert.strictEqual(getToasts().length, 1);
+assert.strictEqual(getToasts()[0].type, "success");
+assert.strictEqual(getToasts()[0].title, "Task completed");
+
+// Deduplication test: same message within 1 second should not duplicate
+toast.success("Task completed", { description: "Great work!" });
+assert.strictEqual(getToasts().length, 1);
+
+// Different message adds toast
+const errId = toast.error("Error occurred");
+assert.strictEqual(getToasts().length, 2);
+
+// Dismiss by ID
+dismissToast(errId);
+assert.strictEqual(getToasts().length, 1);
+
+clearToasts();
+assert.strictEqual(getToasts().length, 0);
+console.log("✓ Toast store passed.");
+
+console.log("▶ [Test 7] ConfirmDialog State Machine & Promise Resolution...");
+import { confirmDialog, closeConfirmDialog, getActiveDialog } from "../components/ConfirmDialog";
+
+let resolvedValue: boolean | null = null;
+const dialogPromise = confirmDialog({
+  title: "Delete resource?",
+  description: "Permanent action",
+  variant: "destructive",
+}).then((val) => {
+  resolvedValue = val;
+  return val;
+});
+
+const currentDialog = getActiveDialog();
+assert.ok(currentDialog !== null);
+assert.strictEqual(currentDialog?.title, "Delete resource?");
+assert.strictEqual(currentDialog?.variant, "destructive");
+
+// Simulate confirming
+closeConfirmDialog(true);
+assert.strictEqual(getActiveDialog(), null);
+
+await dialogPromise;
+assert.strictEqual(resolvedValue, true);
+console.log("✓ ConfirmDialog state machine passed.");
+
 console.log("\n All Critical Logic & Security Checks Passed Successfully!");

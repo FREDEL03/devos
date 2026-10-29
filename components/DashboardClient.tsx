@@ -29,6 +29,7 @@ import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSetting
 import { signout } from "@/app/auth/actions";
 import { createTask, updateTask, TaskInput } from "@/app/tasks/actions";
 import { createSnippet, SnippetInput } from "@/app/snippets/actions";
+import { toast } from "@/components/Toast";
 
 interface DashboardClientProps {
   user: {
@@ -89,13 +90,20 @@ export function DashboardClient({
     );
 
     startTransition(async () => {
-      await updateTask(id, { completed: nextCompleted });
+      const res = await updateTask(id, { completed: nextCompleted });
+      if (res?.error) {
+        toast.error("Failed to update task", { description: res.error });
+        setTasks(tasks);
+      } else {
+        toast.info(nextCompleted ? "Task marked completed" : "Task reopened");
+      }
     });
   };
 
   const handleCreateTask = async (data: TaskInput) => {
     const res = await createTask(data);
     if (res?.error) {
+      toast.error("Failed to create task", { description: res.error });
       return { error: res.error };
     }
     if (res?.data) {
@@ -113,12 +121,14 @@ export function DashboardClient({
         updated_at: res.data.updated_at,
       };
       setTasks((prev) => [created, ...prev]);
+      toast.success("Task created", { description: `"${created.title}" added to your workspace.` });
     }
   };
 
   const handleSaveSnippet = async (data: SnippetInput) => {
     const res = await createSnippet(data);
     if (res?.error) {
+      toast.error("Failed to save snippet", { description: res.error });
       return { error: res.error };
     }
     if (res?.data) {
@@ -134,6 +144,7 @@ export function DashboardClient({
         updated_at: res.data.updated_at,
       };
       setSnippets((prev) => [created, ...prev]);
+      toast.success("Snippet saved", { description: `"${created.title}" saved to library.` });
     }
   };
 

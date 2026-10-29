@@ -23,6 +23,8 @@ import {
   createGitTemplate,
   deleteGitTemplate,
 } from "@/app/git-toolkit/actions";
+import { toast } from "./Toast";
+import { confirmDialog } from "./ConfirmDialog";
 
 interface GitToolkitProps {
   initialTemplates?: GitTemplate[];
@@ -65,7 +67,6 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [, startTransition] = useTransition();
 
@@ -97,17 +98,18 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
     breakingDetails,
   ]);
 
-  const showNotification = (type: "success" | "error", text: string) => {
-    setFeedback({ type, text });
-    setTimeout(() => setFeedback(null), 3000);
-  };
-
-  const handleCopy = async (text: string, fieldKey: string) => {
+  const handleCopy = async (text: string, fieldKey: string, fieldLabel = "Text") => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldKey);
+      toast.success(`${fieldLabel} copied`, {
+        description: "Content copied to clipboard.",
+      });
       setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
+      toast.error(`Failed to copy ${fieldLabel.toLowerCase()}`, {
+        description: "Clipboard access was denied or unavailable.",
+      });
       console.error("Clipboard copy failed:", err);
     }
   };
@@ -128,15 +130,19 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
       });
 
       if (res?.error) {
-        showNotification("error", res.error);
+        toast.error("Failed to save template", { description: res.error });
       } else if (res?.data) {
         setTemplates((prev) => [res.data, ...prev]);
         setTemplateName("");
         setIsTemplateModalOpen(false);
-        showNotification("success", `Template "${res.data.name}" saved to Supabase.`);
+        toast.success("Template saved", {
+          description: `Template "${res.data.name}" saved to Supabase.`,
+        });
       }
     } catch (err: unknown) {
-      showNotification("error", err instanceof Error ? err.message : "Failed to save template.");
+      toast.error("Failed to save template", {
+        description: err instanceof Error ? err.message : "Unexpected error saving template.",
+      });
     } finally {
       setSavingTemplate(false);
     }
@@ -147,22 +153,28 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
     if (t.commit_template) setCommitMessage(t.commit_template);
     if (t.pr_title_template) setPrTitle(t.pr_title_template);
     if (t.pr_description_template) setPrDescription(t.pr_description_template);
-    showNotification("success", `Applied template: ${t.name}`);
+    toast.info("Template applied", { description: `Loaded settings from "${t.name}".` });
   };
 
   const handleDeleteTemplate = async (id: string, name: string) => {
-    const previous = templates;
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
-
-    startTransition(async () => {
-      const res = await deleteGitTemplate(id);
-      if (res?.error) {
-        showNotification("error", `Failed to delete template: ${res.error}`);
-        setTemplates(previous);
-      } else {
-        showNotification("success", `Template "${name}" deleted.`);
-      }
+    const confirmed = await confirmDialog({
+      title: `Delete template "${name}"?`,
+      description: "This git template will be permanently removed from Supabase. This action cannot be undone.",
+      confirmText: "Delete Template",
+      cancelText: "Cancel",
+      variant: "destructive",
+      onConfirm: async () => {
+        const res = await deleteGitTemplate(id);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+      },
     });
+
+    if (confirmed) {
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Template deleted", { description: `Template "${name}" was removed.` });
+    }
   };
 
   // Compute subject length of commit
@@ -196,24 +208,6 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
           </button>
         </div>
       </div>
-
-      {/* Notification Toast */}
-      {feedback && (
-        <div
-          className={`flex items-center gap-2 rounded-lg p-3 text-xs transition-all ${
-            feedback.type === "success"
-              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
-              : "bg-rose-500/10 text-rose-300 border border-rose-500/30"
-          }`}
-        >
-          {feedback.type === "success" ? (
-            <Check className="w-4 h-4 text-emerald-400" />
-          ) : (
-            <X className="w-4 h-4 text-rose-400" />
-          )}
-          <span>{feedback.text}</span>
-        </div>
-      )}
 
       {/* Templates Row (if any exist) */}
       {templates.length > 0 && (
@@ -398,7 +392,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => handleCopy(`git checkout -b ${branchName}`, "branchCmd")}
+                  onClick={() => handleCopy(`git checkout -b ${branchName}`, "branchCmd", "Git checkout command")}
                   className="rounded border border-white/10 bg-zinc-900 px-2 py-1 text-[11px] font-mono text-zinc-300 hover:text-white hover:border-violet-500/40"
                   title="Copy 'git checkout -b <branch>'"
                 >
@@ -406,7 +400,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleCopy(branchName, "branch")}
+                  onClick={() => handleCopy(branchName, "branch", "Branch name")}
                   className="flex items-center gap-1 rounded border border-white/10 bg-violet-600/20 px-2 py-1 text-[11px] font-medium text-violet-300 hover:bg-violet-600/30"
                 >
                   {copiedField === "branch" ? (
@@ -450,7 +444,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => handleCopy(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, "commitCmd")}
+                  onClick={() => handleCopy(`git commit -m "${commitMessage.replace(/"/g, '\\"')}"`, "commitCmd", "Commit command")}
                   className="rounded border border-white/10 bg-zinc-900 px-2 py-1 text-[11px] font-mono text-zinc-300 hover:text-white hover:border-violet-500/40"
                   title="Copy 'git commit -m ...'"
                 >
@@ -458,7 +452,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleCopy(commitMessage, "commit")}
+                  onClick={() => handleCopy(commitMessage, "commit", "Commit message")}
                   className="flex items-center gap-1 rounded border border-white/10 bg-violet-600/20 px-2 py-1 text-[11px] font-medium text-violet-300 hover:bg-violet-600/30"
                 >
                   {copiedField === "commit" ? (
@@ -495,7 +489,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
               </div>
               <button
                 type="button"
-                onClick={() => handleCopy(prTitle, "prTitle")}
+                onClick={() => handleCopy(prTitle, "prTitle", "PR title")}
                 className="flex items-center gap-1 rounded border border-white/10 bg-violet-600/20 px-2 py-1 text-[11px] font-medium text-violet-300 hover:bg-violet-600/30"
               >
                 {copiedField === "prTitle" ? (
@@ -530,7 +524,7 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
               </div>
               <button
                 type="button"
-                onClick={() => handleCopy(prDescription, "prDesc")}
+                onClick={() => handleCopy(prDescription, "prDesc", "PR description")}
                 className="flex items-center gap-1 rounded border border-white/10 bg-violet-600/20 px-2 py-1 text-[11px] font-medium text-violet-300 hover:bg-violet-600/30"
               >
                 {copiedField === "prDesc" ? (

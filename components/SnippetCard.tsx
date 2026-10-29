@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Code2, Copy, Check, Pencil, Trash2, ChevronDown, ChevronUp, Tag } from "./icons";
 import { CodeSnippet } from "./types";
+import { toast } from "./Toast";
 
 interface SnippetCardProps {
   snippet: CodeSnippet;
@@ -19,26 +20,20 @@ export function SnippetCard({
 }: SnippetCardProps) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(snippet.code);
       setCopied(true);
+      toast.success("Snippet copied", {
+        description: `"${snippet.title}" copied to clipboard.`,
+      });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
+      toast.error("Failed to copy snippet", {
+        description: "Clipboard access was denied or failed.",
+      });
       console.error("Failed to copy snippet:", err);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await onDelete(snippet.id);
-    } finally {
-      setIsDeleting(false);
-      setConfirmDelete(false);
     }
   };
 
@@ -251,45 +246,22 @@ export function SnippetCard({
         </span>
 
         <div className="flex items-center gap-1">
-          {confirmDelete ? (
-            <div className="flex items-center gap-1.5 animate-in fade-in duration-150">
-              <span className="text-[11px] text-zinc-400">Delete snippet?</span>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="rounded bg-rose-600/30 border border-rose-500/40 px-2 py-0.5 text-[11px] text-rose-300 hover:bg-rose-600/50 disabled:opacity-50"
-              >
-                {isDeleting ? "..." : "Confirm"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(false)}
-                className="rounded px-1.5 py-0.5 text-[11px] text-zinc-400 hover:text-zinc-200"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => onEdit(snippet)}
-                className="flex items-center gap-1 rounded-md p-1.5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200 transition-colors"
-                title="Edit snippet"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1 rounded-md p-1.5 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
-                title="Delete snippet"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={() => onEdit(snippet)}
+            className="flex items-center gap-1 rounded-md p-1.5 text-zinc-400 hover:bg-white/5 hover:text-zinc-200 transition-colors"
+            title="Edit snippet"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(snippet.id)}
+            className="flex items-center gap-1 rounded-md p-1.5 text-zinc-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+            title="Delete snippet"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>

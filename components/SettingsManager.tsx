@@ -44,6 +44,8 @@ import {
   getAISettingsStatus,
 } from "@/app/settings/actions";
 import { signout } from "@/app/auth/actions";
+import { toast } from "@/components/Toast";
+import { confirmDialog } from "@/components/ConfirmDialog";
 
 type SettingsSection =
   | "general"
@@ -175,10 +177,28 @@ export function SettingsManager({
   }, [settings.theme, settings.accent_color, settings.compact_density]);
 
   const showNotification = (type: "success" | "error", text: string) => {
+    if (type === "success") {
+      toast.success(text);
+    } else {
+      toast.error(text);
+    }
     setStatusMessage({ type, text });
     setTimeout(() => {
       setStatusMessage(null);
     }, 4000);
+  };
+
+  const handleSignOut = async () => {
+    await confirmDialog({
+      title: "Sign out of DevOS?",
+      description: "Your session cookies will be revoked on this device.",
+      confirmText: "Sign Out",
+      cancelText: "Cancel",
+      variant: "normal",
+      onConfirm: async () => {
+        await signout();
+      },
+    });
   };
 
   // Section 2 & 5 & 7: Save user settings
@@ -957,7 +977,7 @@ export function SettingsManager({
                   <p className="text-[11px] text-zinc-500">Sign out will revoke session cookies across this browser.</p>
                   <button
                     type="button"
-                    onClick={() => signout()}
+                    onClick={handleSignOut}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 text-xs font-medium transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />

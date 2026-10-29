@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Flame, ArrowUpRight } from "@/components/icons";
 import { login } from "@/app/auth/actions";
+import { toast } from "@/components/Toast";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ function LoginForm() {
       const res = await login(formData);
       if (res?.error) {
         setErrorMessage(res.error);
+        toast.error("Sign in failed", { description: res.error });
       }
     });
   };

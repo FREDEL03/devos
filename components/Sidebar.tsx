@@ -16,6 +16,7 @@ import {
   LogOut,
 } from "./icons";
 import { NavTab } from "./types";
+import { confirmDialog } from "./ConfirmDialog";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -61,6 +62,20 @@ export function Sidebar({
   const handleSelect = (tab: NavTab) => {
     onSelectTab(tab);
     onCloseMobile();
+  };
+
+  const handleSignOutClick = async () => {
+    if (!onSignOut) return;
+    await confirmDialog({
+      title: "Sign out of DevOS?",
+      description: "Are you sure you want to log out of your workspace?",
+      confirmText: "Sign Out",
+      cancelText: "Stay Logged In",
+      variant: "normal",
+      onConfirm: async () => {
+        await onSignOut();
+      },
+    });
   };
 
   const content = (
@@ -148,7 +163,7 @@ export function Sidebar({
           </div>
           {onSignOut ? (
             <button
-              onClick={onSignOut}
+              onClick={handleSignOutClick}
               title="Sign out"
               className="p-1.5 rounded-md text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
             >
