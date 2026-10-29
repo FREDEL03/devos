@@ -134,6 +134,8 @@ function ConfirmDialogModal({
       setLoading(false);
       onSuccess();
     } catch (err: unknown) {
+      // Next.js redirect() throws internally — let it propagate
+      if (err instanceof Error && (err as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw err;
       setErrorMessage(err instanceof Error ? err.message : "Action failed. Please try again.");
       setLoading(false);
     }
