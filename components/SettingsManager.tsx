@@ -32,6 +32,7 @@ import {
   TaskSortOption,
   AIResponseStyle,
   Priority,
+  DEFAULT_USER_SETTINGS,
 } from "@/components/types";
 import {
   updateUserSettings,
@@ -41,7 +42,6 @@ import {
   clearUserCollection,
   getUserDataStats,
   getAISettingsStatus,
-  DEFAULT_USER_SETTINGS,
 } from "@/app/settings/actions";
 import { signout } from "@/app/auth/actions";
 
@@ -115,7 +115,7 @@ export function SettingsManager({
   // Data management modal
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [collectionToClear, setCollectionToClear] = useState<
-    "tasks" | "projects" | "snippets" | "work_logs" | "learning_entries" | null
+    "tasks" | "projects" | "code_snippets" | "work_logs" | "learning_entries" | null
   >(null);
   const [confirmText, setConfirmText] = useState("");
 
@@ -1166,7 +1166,7 @@ export function SettingsManager({
                   <button
                     type="button"
                     onClick={() => {
-                      setCollectionToClear("snippets");
+                      setCollectionToClear("code_snippets");
                       setClearModalOpen(true);
                     }}
                     className="flex items-center justify-between p-3 rounded-lg border border-rose-500/20 bg-zinc-900 text-xs text-zinc-300 hover:text-white hover:border-rose-500/40 transition-colors"

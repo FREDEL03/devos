@@ -25,8 +25,7 @@ import {
   CheckSquare,
   Code2,
 } from "@/components/icons";
-import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings } from "@/components/types";
-import { DEFAULT_USER_SETTINGS } from "@/app/settings/actions";
+import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings, DEFAULT_USER_SETTINGS } from "@/components/types";
 import { signout } from "@/app/auth/actions";
 import { createTask, updateTask, TaskInput } from "@/app/tasks/actions";
 import { createSnippet, SnippetInput } from "@/app/snippets/actions";

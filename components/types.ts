@@ -160,6 +160,21 @@ export interface UserSettings {
   updated_at?: string;
 }
 
+export const DEFAULT_USER_SETTINGS: UserSettings = {
+  theme: "dark",
+  accent_color: "violet",
+  date_format: "YYYY-MM-DD",
+  time_format: "12h",
+  preferred_language: "TypeScript",
+  default_task_priority: "Medium",
+  default_task_view: "List",
+  default_task_sort: "priority",
+  default_landing: "Dashboard",
+  response_style: "balanced",
+  sidebar_collapsed: false,
+  compact_density: false,
+};
+
 export interface UserDataStats {
   tasksCount: number;
   projectsCount: number;

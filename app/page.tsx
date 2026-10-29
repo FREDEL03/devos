@@ -5,9 +5,9 @@ import { getProjects } from "@/app/projects/actions";
 import { getSnippets } from "@/app/snippets/actions";
 import { getWorkLogs } from "@/app/work-logs/actions";
 import { getLearningEntries } from "@/app/learning/actions";
-import { getUserSettings, DEFAULT_USER_SETTINGS } from "@/app/settings/actions";
+import { getUserSettings } from "@/app/settings/actions";
 import { DashboardClient } from "@/components/DashboardClient";
-import { Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings } from "@/components/types";
+import { Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings, DEFAULT_USER_SETTINGS } from "@/components/types";
 
 export const instant = false;
 

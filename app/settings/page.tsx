@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getUserSettings, getUserDataStats, DEFAULT_USER_SETTINGS } from "./actions";
+import { getUserSettings, getUserDataStats } from "./actions";
 import { SettingsPageClient } from "@/components/SettingsPageClient";
-import { UserSettings, UserDataStats } from "@/components/types";
+import { UserSettings, UserDataStats, DEFAULT_USER_SETTINGS } from "@/components/types";
 
 export const instant = false;
 
@@ -42,7 +42,7 @@ export default async function SettingsPage() {
     fullName: user.user_metadata?.full_name,
     avatarUrl: user.user_metadata?.avatar_url,
     createdAt: user.created_at,
-    lastSignInAt: user.last_sign_in_at,
+    lastSignInAt: (user as any).last_sign_in_at,
   };
 
   return (

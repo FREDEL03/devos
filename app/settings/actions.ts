@@ -2,23 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { UserSettings, UserDataStats } from "@/components/types";
+import { UserSettings, UserDataStats, DEFAULT_USER_SETTINGS } from "@/components/types";
 import { verifyGeminiConnection } from "@/lib/ai/gemini";
-
-export const DEFAULT_USER_SETTINGS: UserSettings = {
-  theme: "dark",
-  accent_color: "violet",
-  date_format: "YYYY-MM-DD",
-  time_format: "12h",
-  preferred_language: "TypeScript",
-  default_task_priority: "Medium",
-  default_task_view: "List",
-  default_task_sort: "priority",
-  default_landing: "Dashboard",
-  response_style: "balanced",
-  sidebar_collapsed: false,
-  compact_density: false,
-};
 
 /**
  * Get the current authenticated user's settings.
@@ -176,7 +161,7 @@ export async function updateUserProfile(
   }
 
   // 1. Update auth.users metadata
-  const { error: userError } = await supabase.auth.updateUser({
+  const { error: userError } = await (supabase.auth as any).updateUser({
     data: {
       full_name: trimmedName,
       avatar_url: avatarUrl?.trim() || null,
@@ -197,7 +182,7 @@ export async function updateUserProfile(
       avatar_url: avatarUrl?.trim() || null,
       updated_at: new Date().toISOString(),
     })
-    .catch((err) => {
+    .catch((err: unknown) => {
       console.warn("Could not sync to profiles table:", err);
     });
 
@@ -230,7 +215,7 @@ export async function changePassword(
     return { error: "Unauthorized. Please log in again." };
   }
 
-  const { error } = await supabase.auth.updateUser({
+  const { error } = await (supabase.auth as any).updateUser({
     password: newPassword,
   });
 
@@ -264,7 +249,7 @@ export async function getUserDataStats(): Promise<UserDataStats> {
   const [tasksRes, projectsRes, snippetsRes, logsRes, learningRes] = await Promise.all([
     supabase.from("tasks").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("projects").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    supabase.from("snippets").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("code_snippets").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("work_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("learning_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
   ]);
@@ -305,7 +290,7 @@ export async function exportUserData(): Promise<{
     getUserSettings().catch(() => DEFAULT_USER_SETTINGS),
     supabase.from("tasks").select("*").eq("user_id", user.id),
     supabase.from("projects").select("*").eq("user_id", user.id),
-    supabase.from("snippets").select("*").eq("user_id", user.id),
+    supabase.from("code_snippets").select("*").eq("user_id", user.id),
     supabase.from("work_logs").select("*").eq("user_id", user.id),
     supabase.from("learning_entries").select("*").eq("user_id", user.id),
   ]);
@@ -326,7 +311,7 @@ export async function exportUserData(): Promise<{
  * Clear specific personal data collections for the authenticated user.
  */
 export async function clearUserCollection(
-  collection: "tasks" | "projects" | "snippets" | "work_logs" | "learning_entries"
+  collection: "tasks" | "projects" | "code_snippets" | "work_logs" | "learning_entries"
 ): Promise<{ success?: boolean; error?: string; count?: number }> {
   const supabase = await createClient();
   const {
@@ -338,7 +323,7 @@ export async function clearUserCollection(
     return { error: "Unauthorized." };
   }
 
-  const allowed = ["tasks", "projects", "snippets", "work_logs", "learning_entries"];
+  const allowed = ["tasks", "projects", "code_snippets", "work_logs", "learning_entries"];
   if (!allowed.includes(collection)) {
     return { error: `Invalid collection: ${collection}` };
   }

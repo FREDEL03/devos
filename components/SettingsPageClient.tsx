@@ -70,6 +70,7 @@ export function SettingsPageClient({
           activeTab="Settings"
           searchQuery=""
           onSearchChange={() => {}}
+          onOpenNewTask={() => router.push("/tasks")}
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
         />
 
