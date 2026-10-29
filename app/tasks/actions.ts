@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { Priority, TaskStatus } from "@/components/types";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface TaskInput {
   title: string;
@@ -83,6 +84,15 @@ export async function createTask(input: TaskInput) {
 
   revalidatePath("/tasks");
   revalidatePath("/");
+
+  await logActivity({
+    action: "task.created",
+    entityType: "task",
+    entityId: data.id,
+    description: `Created task "${data.title}"`,
+    metadata: { taskTitle: data.title, priority: data.priority, status: data.status },
+  });
+
   return { data };
 }
 
@@ -133,6 +143,22 @@ export async function updateTask(id: string, input: Partial<TaskInput> & { compl
 
   revalidatePath("/tasks");
   revalidatePath("/");
+
+  const isCompleteToggle = input.completed !== undefined;
+  const actionStr = isCompleteToggle
+    ? input.completed ? "task.completed" : "task.reopened"
+    : "task.updated";
+  const descStr = isCompleteToggle
+    ? input.completed ? `Completed task "${data.title}"` : `Reopened task "${data.title}"`
+    : `Updated task "${data.title}"`;
+  await logActivity({
+    action: actionStr,
+    entityType: "task",
+    entityId: id,
+    description: descStr,
+    metadata: { taskTitle: data.title },
+  });
+
   return { data };
 }
 
@@ -159,5 +185,13 @@ export async function deleteTask(id: string) {
 
   revalidatePath("/tasks");
   revalidatePath("/");
+
+  await logActivity({
+    action: "task.deleted",
+    entityType: "task",
+    entityId: id,
+    description: "Deleted a task",
+  });
+
   return { success: true };
 }

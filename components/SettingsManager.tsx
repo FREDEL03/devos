@@ -434,7 +434,7 @@ export function SettingsManager({
                       <option value="Code Snippets">Code Snippets</option>
                       <option value="Git Toolkit">Git Toolkit</option>
                       <option value="AI Assistant">AI Assistant</option>
-                      <option value="Work Logs">Work Logs</option>
+                      <option value="Activity Log">Activity Log</option>
                       <option value="Learning Tracker">Learning Tracker</option>
                     </select>
                     <p className="text-[11px] text-zinc-500 mt-1">

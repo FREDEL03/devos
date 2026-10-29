@@ -23,6 +23,7 @@ import {
   createGitTemplate,
   deleteGitTemplate,
 } from "@/app/git-toolkit/actions";
+import { logCopyActivity } from "@/app/activity/actions";
 import { toast } from "./Toast";
 import { confirmDialog } from "./ConfirmDialog";
 
@@ -106,6 +107,8 @@ export function GitToolkit({ initialTemplates = [] }: GitToolkitProps) {
         description: "Content copied to clipboard.",
       });
       setTimeout(() => setCopiedField(null), 2000);
+      // Log copy after clipboard write succeeds
+      logCopyActivity("git", null, `Copied ${fieldLabel.toLowerCase()}`, { field: fieldKey });
     } catch (err) {
       toast.error(`Failed to copy ${fieldLabel.toLowerCase()}`, {
         description: "Clipboard access was denied or unavailable.",

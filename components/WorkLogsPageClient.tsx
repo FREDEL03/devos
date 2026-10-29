@@ -39,8 +39,8 @@ export function WorkLogsPageClient({
       router.push("/git-toolkit");
     } else if (tab === "AI Assistant") {
       router.push("/ai");
-    } else if (tab === "Work Logs") {
-      router.push("/work-logs");
+    } else if (tab === "Activity Log") {
+      router.push("/activity");
     } else if (tab === "Learning Tracker") {
       router.push("/learning");
     } else if (tab === "Settings") {
@@ -53,7 +53,7 @@ export function WorkLogsPageClient({
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col md:flex-row">
       <Sidebar
-        activeTab="Work Logs"
+        activeTab="Activity Log"
         onSelectTab={handleSelectTab}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -64,7 +64,7 @@ export function WorkLogsPageClient({
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">
         <Header
-          activeTab="Work Logs"
+          activeTab="Activity Log"
           searchQuery=""
           onSearchChange={() => {}}
           onOpenNewTask={() => router.push("/tasks")}

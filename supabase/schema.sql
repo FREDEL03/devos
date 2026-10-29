@@ -425,4 +425,40 @@ create trigger tr_user_settings_updated_at
   before update on public.user_settings
   for each row execute function public.handle_updated_at();
 
+-- ==============================================================================
+-- TABLE: activity_logs
+-- Append-only audit trail. Users can SELECT but not UPDATE or DELETE.
+-- Writes happen server-side via service or anon key (RLS insert allowed).
+-- ==============================================================================
+create table if not exists public.activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action text not null,
+  entity_type text not null default '',
+  entity_id text,
+  description text not null,
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.activity_logs enable row level security;
+
+-- Users can only view their own logs
+drop policy if exists "Users can view own activity logs" on public.activity_logs;
+create policy "Users can view own activity logs"
+  on public.activity_logs for select
+  using (auth.uid() = user_id);
+
+-- Users can insert their own logs (server actions write on their behalf)
+drop policy if exists "Users can insert own activity logs" on public.activity_logs;
+create policy "Users can insert own activity logs"
+  on public.activity_logs for insert
+  with check (auth.uid() = user_id);
+
+-- No UPDATE or DELETE policies — audit logs are append-only
+
+create index if not exists idx_activity_logs_user_id on public.activity_logs(user_id);
+create index if not exists idx_activity_logs_created_at on public.activity_logs(user_id, created_at desc);
+create index if not exists idx_activity_logs_entity_type on public.activity_logs(user_id, entity_type);
+create index if not exists idx_activity_logs_action on public.activity_logs(user_id, action);
 

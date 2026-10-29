@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { LearningEntry, LearningCategory, LearningStatus } from "@/components/types";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface LearningEntryInput {
   title: string;
@@ -120,6 +121,14 @@ export async function createLearningEntry(
     updated_at: row.updated_at,
   };
 
+  await logActivity({
+    action: "learning.created",
+    entityType: "learning",
+    entityId: created.id,
+    description: `Created learning goal "${created.title}"`,
+    metadata: { title: created.title, category: created.category, status: created.status },
+  });
+
   return { data: created };
 }
 
@@ -211,6 +220,21 @@ export async function updateLearningEntry(
     updated_at: row.updated_at,
   };
 
+  const isCompleted = updated.status === "Completed" && input.status === "Completed";
+  await logActivity({
+    action: isCompleted ? "learning.completed" : "learning.updated",
+    entityType: "learning",
+    entityId: id,
+    description: isCompleted
+      ? `Completed learning goal "${updated.title}"`
+      : `Updated learning goal "${updated.title}"`,
+    metadata: {
+      title: updated.title,
+      status: updated.status,
+      mastery_percentage: updated.mastery_percentage,
+    },
+  });
+
   return { data: updated };
 }
 
@@ -238,6 +262,14 @@ export async function deleteLearningEntry(id: string): Promise<{ success: boolea
 
   revalidatePath("/learning");
   revalidatePath("/");
+
+  await logActivity({
+    action: "learning.deleted",
+    entityType: "learning",
+    entityId: id,
+    description: "Deleted a learning goal",
+  });
+
   return { success: true };
 }
 

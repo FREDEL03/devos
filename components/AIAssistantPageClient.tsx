@@ -32,8 +32,8 @@ export function AIAssistantPageClient({ user }: AIAssistantPageClientProps) {
       router.push("/git-toolkit");
     } else if (tab === "AI Assistant") {
       router.push("/ai");
-    } else if (tab === "Work Logs") {
-      router.push("/work-logs");
+    } else if (tab === "Activity Log") {
+      router.push("/activity");
     } else if (tab === "Learning Tracker") {
       router.push("/learning");
     } else if (tab === "Settings") {

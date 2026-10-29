@@ -368,6 +368,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      activity_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          description: string;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          description: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string | null;
+          description?: string;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

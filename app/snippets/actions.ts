@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { CodeSnippet } from "@/components/types";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface SnippetInput {
   title: string;
@@ -91,6 +92,15 @@ export async function createSnippet(input: SnippetInput) {
 
   revalidatePath("/snippets");
   revalidatePath("/");
+
+  await logActivity({
+    action: "snippet.created",
+    entityType: "snippet",
+    entityId: data.id,
+    description: `Created snippet "${data.title}"`,
+    metadata: { snippetTitle: data.title, language: data.language },
+  });
+
   return { data };
 }
 
@@ -148,6 +158,15 @@ export async function updateSnippet(id: string, input: Partial<SnippetInput>) {
 
   revalidatePath("/snippets");
   revalidatePath("/");
+
+  await logActivity({
+    action: "snippet.updated",
+    entityType: "snippet",
+    entityId: id,
+    description: `Updated snippet "${data.title}"`,
+    metadata: { snippetTitle: data.title, language: data.language },
+  });
+
   return { data };
 }
 
@@ -174,5 +193,13 @@ export async function deleteSnippet(id: string) {
 
   revalidatePath("/snippets");
   revalidatePath("/");
+
+  await logActivity({
+    action: "snippet.deleted",
+    entityType: "snippet",
+    entityId: id,
+    description: "Deleted a code snippet",
+  });
+
   return { success: true };
 }

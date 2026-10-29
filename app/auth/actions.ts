@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface AuthActionResult {
   error?: string;
@@ -28,6 +29,14 @@ export async function login(formData: FormData): Promise<AuthActionResult> {
   }
 
   revalidatePath("/", "layout");
+
+  // Log login after successful auth (logActivity reads session internally, no credentials stored)
+  await logActivity({
+    action: "auth.login",
+    entityType: "auth",
+    description: "Signed in to DevOS",
+  });
+
   redirect("/");
 }
 
@@ -78,6 +87,12 @@ export async function signup(formData: FormData): Promise<AuthActionResult> {
 
 export async function signout() {
   const supabase = await createClient();
+  // Log before sign out while session still active
+  await logActivity({
+    action: "auth.logout",
+    entityType: "auth",
+    description: "Signed out of DevOS",
+  });
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { GitTemplate } from "@/components/types";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface GitTemplateInput {
   name: string;
@@ -92,6 +93,15 @@ export async function createGitTemplate(input: GitTemplateInput) {
 
   revalidatePath("/git-toolkit");
   revalidatePath("/");
+
+  await logActivity({
+    action: "git_template.created",
+    entityType: "git_template",
+    entityId: data.id,
+    description: `Saved git template "${data.name}"`,
+    metadata: { templateName: data.name, changeType: data.change_type },
+  });
+
   return { data };
 }
 
@@ -158,5 +168,13 @@ export async function deleteGitTemplate(id: string) {
 
   revalidatePath("/git-toolkit");
   revalidatePath("/");
+
+  await logActivity({
+    action: "git_template.deleted",
+    entityType: "git_template",
+    entityId: id,
+    description: "Deleted a git template",
+  });
+
   return { success: true };
 }

@@ -8,7 +8,7 @@ import {
   Code2,
   GitBranch,
   Bot,
-  Clock,
+  Activity,
   GraduationCap,
   Settings,
   X,
@@ -61,7 +61,7 @@ export function Sidebar({
     { id: "Code Snippets", label: "Code Snippets", icon: Code2 },
     { id: "Git Toolkit", label: "Git Toolkit", icon: GitBranch },
     { id: "AI Assistant", label: "AI Assistant", icon: Bot },
-    { id: "Work Logs", label: "Work Logs", icon: Clock },
+    { id: "Activity Log", label: "Activity Log", icon: Activity },
     { id: "Learning Tracker", label: "Learning Tracker", icon: GraduationCap },
     { id: "Settings", label: "Settings", icon: Settings },
   ];

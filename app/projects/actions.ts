@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { Project, ProjectStatus } from "@/components/types";
+import { logActivity } from "@/lib/activity/logger";
 
 export interface ProjectInput {
   name: string;
@@ -125,6 +126,15 @@ export async function createProject(input: ProjectInput) {
 
   revalidatePath("/projects");
   revalidatePath("/");
+
+  await logActivity({
+    action: "project.created",
+    entityType: "project",
+    entityId: data.id,
+    description: `Created project "${data.name}"`,
+    metadata: { projectName: data.name, status: data.status },
+  });
+
   return { data };
 }
 
@@ -171,6 +181,19 @@ export async function updateProject(id: string, input: Partial<ProjectInput>) {
 
   revalidatePath("/projects");
   revalidatePath("/");
+
+  const actionStr = input.status === "Archived" ? "project.archived" : "project.updated";
+  const descStr = input.status === "Archived"
+    ? `Archived project "${data.name}"`
+    : `Updated project "${data.name}"`;
+  await logActivity({
+    action: actionStr,
+    entityType: "project",
+    entityId: id,
+    description: descStr,
+    metadata: { projectName: data.name, status: data.status },
+  });
+
   return { data };
 }
 
@@ -201,5 +224,13 @@ export async function deleteProject(id: string) {
 
   revalidatePath("/projects");
   revalidatePath("/");
+
+  await logActivity({
+    action: "project.deleted",
+    entityType: "project",
+    entityId: id,
+    description: "Deleted a project",
+  });
+
   return { success: true };
 }

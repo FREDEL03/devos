@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Code2, Copy, Check, Pencil, Trash2, ChevronDown, ChevronUp, Tag } from "./icons";
 import { CodeSnippet } from "./types";
 import { toast } from "./Toast";
+import { logCopyActivity } from "@/app/activity/actions";
 
 interface SnippetCardProps {
   snippet: CodeSnippet;
@@ -29,6 +30,11 @@ export function SnippetCard({
         description: `"${snippet.title}" copied to clipboard.`,
       });
       setTimeout(() => setCopied(false), 2000);
+      // Log after clipboard write succeeds
+      logCopyActivity("snippet", snippet.id, `Copied snippet "${snippet.title}"`, {
+        snippetTitle: snippet.title,
+        language: snippet.language,
+      });
     } catch (err) {
       toast.error("Failed to copy snippet", {
         description: "Clipboard access was denied or failed.",

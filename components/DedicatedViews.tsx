@@ -263,34 +263,14 @@ export function DedicatedViews({
     );
   }
 
-  if (activeTab === "Work Logs") {
+  if (activeTab === "Activity Log") {
     return (
       <div className="rounded-xl border border-white/5 bg-[#121217] p-5 space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-white">Daily Engineering Logs</h2>
-          <p className="text-xs text-zinc-500">Track focus sessions, PRs merged, and standup notes</p>
+          <h2 className="text-base font-semibold text-white">Activity Log</h2>
+          <p className="text-xs text-zinc-500">DevOS automatically records your important actions</p>
         </div>
-        <div className="space-y-3 text-xs">
-          {[
-            { time: "09:30 AM", event: "Merged PR #42: Dark theme palette and tokens", cat: "GitHub" },
-            { time: "11:15 AM", event: "Profiling memory footprint in Go gateway proxy", cat: "Perf" },
-            { time: "02:00 PM", event: "Sprint roadmap review with engineering leads", cat: "Meeting" },
-            { time: "04:45 PM", event: "Configured zero-downtime database rollout scripts", cat: "Infra" },
-          ].map((log) => (
-            <div
-              key={log.time}
-              className="flex items-center justify-between rounded-lg bg-white/[0.02] border border-white/5 p-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-violet-400">{log.time}</span>
-                <span className="text-zinc-200">{log.event}</span>
-              </div>
-              <span className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400">
-                {log.cat}
-              </span>
-            </div>
-          ))}
-        </div>
+        <p className="text-xs text-zinc-400">Loading activity log…</p>
       </div>
     );
   }

@@ -13,7 +13,7 @@ import { ProjectManager } from "@/components/ProjectManager";
 import { SnippetManager } from "@/components/SnippetManager";
 import { GitToolkit } from "@/components/GitToolkit";
 import { AIAssistant } from "@/components/AIAssistant";
-import { WorkLogManager } from "@/components/WorkLogManager";
+import { ActivityLogManager } from "@/components/ActivityLogManager";
 import { LearningManager } from "@/components/LearningManager";
 import { SettingsManager } from "@/components/SettingsManager";
 import { GitMessageModal } from "@/components/GitMessageModal";
@@ -260,8 +260,8 @@ export function DashboardClient({
             <GitToolkit />
           ) : activeTab === "AI Assistant" ? (
             <AIAssistant />
-          ) : activeTab === "Work Logs" ? (
-            <WorkLogManager initialLogs={workLogs} projects={projects} />
+          ) : activeTab === "Activity Log" ? (
+            <ActivityLogManager />
           ) : activeTab === "Learning Tracker" ? (
             <LearningManager initialEntries={learningEntries} />
           ) : activeTab === "Settings" ? (

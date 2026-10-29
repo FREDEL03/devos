@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { UserSettings, UserDataStats, DEFAULT_USER_SETTINGS } from "@/components/types";
 import { verifyGeminiConnection } from "@/lib/ai/gemini";
+import { logActivity } from "@/lib/activity/logger";
 
 /**
  * Get the current authenticated user's settings.
@@ -130,6 +131,15 @@ export async function updateUserSettings(
 
     revalidatePath("/settings");
     revalidatePath("/");
+
+    await logActivity({
+      action: "settings.updated",
+      entityType: "settings",
+      description: "Updated settings",
+      // ponytail: only log key names, not values — some settings (theme, accent) are safe but we keep it minimal
+      metadata: { changedKeys: Object.keys(settings).filter((k) => k !== "user_id") },
+    });
+
     return { success: true, data: data as UserSettings };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error while saving settings";
@@ -187,11 +197,16 @@ export async function updateUserProfile(
     });
 
   revalidatePath("/", "layout");
-  return { success: true };
-}
 
-/**
- * Change the authenticated user's password using official Supabase Auth.
+  await logActivity({
+    action: "profile.updated",
+    entityType: "profile",
+    description: "Updated profile information",
+    metadata: { hasAvatarUrl: Boolean(avatarUrl?.trim()) },
+  });
+
+  return { success: true };
+} using official Supabase Auth.
  */
 export async function changePassword(
   newPassword: string,

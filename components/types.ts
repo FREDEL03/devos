@@ -130,7 +130,7 @@ export type NavTab =
   | "Code Snippets"
   | "Git Toolkit"
   | "AI Assistant"
-  | "Work Logs"
+  | "Activity Log"
   | "Learning Tracker"
   | "Settings";
 
@@ -181,5 +181,16 @@ export interface UserDataStats {
   snippetsCount: number;
   workLogsCount: number;
   learningEntriesCount: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  user_id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
