@@ -30,7 +30,8 @@ export interface ToastItem {
   };
 }
 
-let toasts: ToastItem[] = [];
+const EMPTY_TOASTS: ToastItem[] = [];
+let toasts: ToastItem[] = EMPTY_TOASTS;
 const listeners = new Set<() => void>();
 let counter = 0;
 
@@ -126,8 +127,10 @@ function getSnapshot() {
   return toasts;
 }
 
+const getServerSnapshot = () => EMPTY_TOASTS;
+
 export function ToastContainer() {
-  const activeToasts = useSyncExternalStore(subscribe, getSnapshot, () => []);
+  const activeToasts = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (activeToasts.length === 0) return null;
 
