@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { SnippetManager } from "./SnippetManager";
 import { CodeSnippet } from "./types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface SnippetsPageClientProps {
   user: {
@@ -58,7 +58,7 @@ export function SnippetsPageClient({
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={0}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

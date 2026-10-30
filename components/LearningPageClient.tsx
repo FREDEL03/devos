@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { LearningManager } from "./LearningManager";
 import { LearningEntry } from "./types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface LearningPageClientProps {
   user: {
@@ -57,7 +57,7 @@ export function LearningPageClient({
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={0}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

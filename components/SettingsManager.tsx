@@ -43,7 +43,7 @@ import {
   getUserDataStats,
   getAISettingsStatus,
 } from "@/app/settings/actions";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 import { toast } from "@/components/Toast";
 import { confirmDialog } from "@/components/ConfirmDialog";
 
@@ -196,7 +196,7 @@ export function SettingsManager({
       cancelText: "Cancel",
       variant: "normal",
       onConfirm: async () => {
-        await signout();
+        await clientSignout();
       },
     });
   };

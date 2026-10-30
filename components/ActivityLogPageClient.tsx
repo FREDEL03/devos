@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { ActivityLogView } from "@/components/ActivityLogView";
 import { ActivityLog } from "@/components/types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface ActivityLogPageClientProps {
   user: {
@@ -59,7 +59,7 @@ export function ActivityLogPageClient({
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={0}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

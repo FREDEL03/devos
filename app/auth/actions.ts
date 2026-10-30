@@ -85,15 +85,22 @@ export async function signup(formData: FormData): Promise<AuthActionResult> {
   redirect("/");
 }
 
-export async function signout() {
-  const supabase = await createClient();
-  // Log before sign out while session still active
-  await logActivity({
-    action: "auth.logout",
-    entityType: "auth",
-    description: "Signed out of DevOS",
-  });
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/login");
+export async function signout(): Promise<AuthActionResult> {
+  try {
+    const supabase = await createClient();
+    // Log before sign out while session still active
+    await logActivity({
+      action: "auth.logout",
+      entityType: "auth",
+      description: "Signed out of DevOS",
+    });
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      return { error: error.message };
+    }
+    revalidatePath("/", "layout");
+    return { success: "Signed out successfully" };
+  } catch (error) {
+    return { error: "Failed to sign out" };
+  }
 }

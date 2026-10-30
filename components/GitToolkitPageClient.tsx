@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { GitToolkit } from "./GitToolkit";
 import { GitTemplate } from "./types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface GitToolkitPageClientProps {
   user: {
@@ -57,7 +57,7 @@ export function GitToolkitPageClient({
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         pendingTasksCount={0}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

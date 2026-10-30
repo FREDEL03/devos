@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { ProjectManager } from "./ProjectManager";
 import { Project } from "./types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface ProjectsPageClientProps {
   user: {
@@ -61,7 +61,7 @@ export function ProjectsPageClient({
         pendingTasksCount={0}
         projectsCount={activeProjectsCount}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

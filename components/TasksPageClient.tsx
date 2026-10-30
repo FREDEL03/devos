@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { TaskManager } from "./TaskManager";
 import { Task, Project } from "./types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 
 interface TasksPageClientProps {
   user: {
@@ -63,7 +63,7 @@ export function TasksPageClient({
         pendingTasksCount={pendingCount}
         projectsCount={initialProjects.filter((p) => p.status !== "Archived").length}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">

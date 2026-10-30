@@ -26,7 +26,7 @@ import {
   Code2,
 } from "@/components/icons";
 import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings, DEFAULT_USER_SETTINGS } from "@/components/types";
-import { signout } from "@/app/auth/actions";
+import { clientSignout } from "@/lib/auth/client";
 import { createTask, updateTask, TaskInput } from "@/app/tasks/actions";
 import { createSnippet, SnippetInput } from "@/app/snippets/actions";
 import { toast } from "@/components/Toast";
@@ -161,7 +161,7 @@ export function DashboardClient({
         pendingTasksCount={pendingTasksCount}
         projectsCount={activeProjectsCount}
         user={user}
-        onSignOut={() => signout()}
+        onSignOut={clientSignout}
       />
 
       {/* Main Content Area */}
