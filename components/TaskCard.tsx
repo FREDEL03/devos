@@ -41,6 +41,12 @@ export function TaskCard({
         className: "bg-violet-500/10 text-violet-300 border-violet-500/20",
       };
     }
+    if (status === "review") {
+      return {
+        label: "Review",
+        className: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      };
+    }
     return {
       label: "To Do",
       className: "bg-zinc-800 text-zinc-300 border-zinc-700",
