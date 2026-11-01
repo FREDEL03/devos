@@ -9,10 +9,14 @@ import {
   ArrowUpDown,
   X,
   Check,
+  Image as ImageIcon,
+  Loader2,
 } from "./icons";
 import { Priority, Task, TaskStatus, Project } from "./types";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
+import { ScreenshotUploadModal } from "./ScreenshotUploadModal";
+import { TaskReviewModal, DraftTask } from "./TaskReviewModal";
 import { toast } from "./Toast";
 import { confirmDialog } from "./ConfirmDialog";
 import {
@@ -38,6 +42,13 @@ export function TaskManager({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "deadline" | "priority">("newest");
+
+  // Screenshot import state
+  const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [draftTasks, setDraftTasks] = useState<DraftTask[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSavingTasks, setIsSavingTasks] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -158,6 +169,121 @@ export function TaskManager({
     setIsModalOpen(true);
   };
 
+  // Screenshot import functions
+  const handleOpenScreenshotImport = () => {
+    setIsScreenshotModalOpen(true);
+  };
+
+  const handleAnalyzeScreenshot = async (file: File) => {
+    setIsAnalyzing(true);
+    try {
+      // Convert to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch("/api/ai/screenshot-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: base64,
+          imageMimeType: file.type,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to analyze screenshot");
+      }
+
+      // Convert to draft tasks
+      const drafts: DraftTask[] = data.tasks.map((task: any) => ({
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        due_date: task.due_date,
+        selected: true,
+      }));
+
+      if (drafts.length === 0) {
+        toast.info("No tasks detected", {
+          description: "The AI couldn't find clear tasks in this screenshot. Try a clearer image.",
+        });
+        setIsScreenshotModalOpen(false);
+        return;
+      }
+
+      setDraftTasks(drafts);
+      setIsScreenshotModalOpen(false);
+      setIsReviewModalOpen(true);
+      toast.success("Screenshot analyzed", {
+        description: `Found ${drafts.length} potential tasks`,
+      });
+    } catch (err: any) {
+      console.error("Screenshot analysis error:", err);
+      toast.error("Analysis failed", {
+        description: err.message || "Could not process screenshot",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSaveDraftTasks = async (tasksToSave: DraftTask[]) => {
+    setIsSavingTasks(true);
+    try {
+      const createdTasks: Task[] = [];
+      for (const draft of tasksToSave) {
+        const input: TaskInput = {
+          title: draft.title,
+          description: draft.description,
+          priority: draft.priority,
+          due_date: draft.due_date,
+        };
+        const res = await createTask(input);
+        if (res?.error) {
+          throw new Error(`Failed to create task "${draft.title}": ${res.error}`);
+        }
+        if (res?.data) {
+          const task: Task = {
+            id: res.data.id,
+            user_id: res.data.user_id,
+            title: res.data.title,
+            description: res.data.description,
+            priority: res.data.priority as Priority,
+            status: res.data.status as TaskStatus,
+            completed: res.data.completed,
+            due_date: res.data.due_date,
+            dueDate: res.data.due_date || undefined,
+            created_at: res.data.created_at,
+            updated_at: res.data.updated_at,
+          };
+          createdTasks.push(task);
+        }
+      }
+
+      // Update local task list
+      syncTasks([...createdTasks, ...tasks]);
+
+      toast.success("Tasks imported", {
+        description: `Added ${createdTasks.length} tasks to your list`,
+      });
+
+      setIsReviewModalOpen(false);
+      setDraftTasks([]);
+    } catch (err: any) {
+      console.error("Failed to save tasks:", err);
+      toast.error("Import failed", {
+        description: err.message || "Some tasks could not be saved",
+      });
+    } finally {
+      setIsSavingTasks(false);
+    }
+  };
+
   // Filter & Sort
   const filteredTasks = useMemo(() => {
     let result = tasks.filter((t) => {
@@ -227,13 +353,22 @@ export function TaskManager({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg bg-violet-600 px-4 py-2 text-xs font-medium text-white shadow-sm shadow-violet-700/30 hover:bg-violet-500 active:scale-98 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Task</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleOpenScreenshotImport}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Import from Screenshot</span>
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-xs font-medium text-white shadow-sm shadow-violet-700/30 hover:bg-violet-500 active:scale-98 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Task</span>
+          </button>
+        </div>
       </div>
 
       {/* Controls Bar: Search, Filters, Sorting */}
@@ -372,6 +507,24 @@ export function TaskManager({
         onSubmit={handleCreateOrUpdateTask}
         initialTask={editingTask}
         projects={projects}
+      />
+
+      {/* Screenshot upload modal */}
+      <ScreenshotUploadModal
+        isOpen={isScreenshotModalOpen}
+        onClose={() => setIsScreenshotModalOpen(false)}
+        onAnalyze={handleAnalyzeScreenshot}
+        isAnalyzing={isAnalyzing}
+      />
+
+      {/* Task review modal */}
+      <TaskReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        draftTasks={draftTasks}
+        onDraftTasksChange={setDraftTasks}
+        onSave={handleSaveDraftTasks}
+        isSaving={isSavingTasks}
       />
     </div>
   );

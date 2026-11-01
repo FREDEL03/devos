@@ -91,6 +91,12 @@ const QUICK_PROMPTS: Record<AITaskType, { label: string; prompt: string; code?: 
       prompt: "What is the recommended method to declare custom CSS color tokens in Tailwind CSS v4 with CSS variables?",
     },
   ],
+  analyze_screenshot: [
+    {
+      label: "Upload a work ticket screenshot",
+      prompt: "Analyze the uploaded screenshot and extract tasks",
+    },
+  ],
 };
 
 export function AIAssistant() {

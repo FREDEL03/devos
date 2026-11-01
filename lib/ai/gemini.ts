@@ -11,13 +11,16 @@ export type AITaskType =
   | "explain_concept"
   | "improve_git"
   | "generate_pr"
-  | "general_query";
+  | "general_query"
+  | "analyze_screenshot";
 
 export interface AIAssistantRequest {
   taskType: AITaskType;
   prompt: string;
   contextCode?: string;
   responseStyle?: "concise" | "balanced" | "detailed";
+  imageBase64?: string; // For screenshot analysis
+  imageMimeType?: string; // e.g., image/png, image/jpeg
 }
 
 export interface AIAssistantResponse {
@@ -61,6 +64,11 @@ export const SUPPORTED_TASK_TYPES: { type: AITaskType; label: string; descriptio
     type: "general_query",
     label: "General Query",
     description: "Ask any software engineering or development question",
+  },
+  {
+    type: "analyze_screenshot",
+    label: "Analyze Screenshot",
+    description: "Extract tasks from ticket screenshots and convert to actionable todos",
   },
 ];
 
@@ -143,6 +151,34 @@ Output clean Markdown with:
 - ## Testing & Verification Steps
 - ## Related Issues`;
 
+    case "analyze_screenshot":
+      return `${baseInstruction}
+TASK: Extract actionable tasks from a work ticket screenshot.
+RULES:
+1. Analyze the image and identify ticket title, description, requirements, expected outcome.
+2. If priority is explicitly indicated (e.g., "High", "Medium", "Low", "P0", "P1", "urgent"), extract it.
+3. If a deadline/date is explicitly shown, extract it in YYYY-MM-DD format.
+4. If a ticket ID or reference number is visible, note it.
+5. Convert the ticket into one or more actionable todo tasks.
+6. For each task, provide:
+   - title: short, clear action
+   - description: details from requirements
+   - priority: only if indicated; otherwise omit
+   - due_date: only if indicated; otherwise omit
+7. Do NOT invent missing information. If priority/deadline not visible, leave empty.
+8. Output a valid JSON array of tasks, exactly this format:
+[
+  {
+    "title": "Review existing login validation",
+    "description": "Check current validation logic and identify gaps",
+    "priority": "Medium",
+    "due_date": "2024-12-31"
+  },
+  ...
+]
+Priority must be one of: "High", "Medium", "Low". Due date must be YYYY-MM-DD.
+Only include tasks that are clearly implied by the ticket.`;
+
     default:
       return baseInstruction;
   }
@@ -167,28 +203,38 @@ export async function callGemini(request: AIAssistantRequest): Promise<AIAssista
     throw new Error(`Unsupported task type: "${request.taskType}".`);
   }
 
-  // Validate input length
-  const combinedInput = `${request.prompt || ""} ${request.contextCode || ""}`.trim();
-  if (!combinedInput) {
-    throw new Error("Prompt cannot be empty.");
-  }
+  // Validate input length (skip for analyze_screenshot with image)
+  if (request.taskType !== "analyze_screenshot" || !request.imageBase64) {
+    const combinedInput = `${request.prompt || ""} ${request.contextCode || ""}`.trim();
+    if (!combinedInput) {
+      throw new Error("Prompt cannot be empty.");
+    }
 
-  if (combinedInput.length > MAX_PROMPT_LENGTH) {
-    throw new Error(
-      `Input length (${combinedInput.length} characters) exceeds the maximum allowed limit of ${MAX_PROMPT_LENGTH} characters.`
-    );
+    if (combinedInput.length > MAX_PROMPT_LENGTH) {
+      throw new Error(
+        `Input length (${combinedInput.length} characters) exceeds the maximum allowed limit of ${MAX_PROMPT_LENGTH} characters.`
+      );
+    }
   }
 
   const systemInstruction = buildSystemInstruction(request.taskType, request.responseStyle);
 
-  let userContent = request.prompt.trim();
-  if (request.contextCode && request.contextCode.trim()) {
-    userContent = `${userContent}\n\n\`\`\`\n${request.contextCode.trim()}\n\`\`\``;
-  }
-
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
   )}:generateContent`;
+
+  const parts: any[] = [{ text: request.prompt.trim() }];
+  if (request.contextCode && request.contextCode.trim()) {
+    parts.push({ text: `\n\n\`\`\`\n${request.contextCode.trim()}\n\`\`\`` });
+  }
+  if (request.imageBase64 && request.imageMimeType) {
+    parts.push({
+      inlineData: {
+        mimeType: request.imageMimeType,
+        data: request.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+      },
+    });
+  }
 
   const payload = {
     systemInstruction: {
@@ -197,11 +243,11 @@ export async function callGemini(request: AIAssistantRequest): Promise<AIAssista
     contents: [
       {
         role: "user",
-        parts: [{ text: userContent }],
+        parts,
       },
     ],
     generationConfig: {
-      temperature: 0.2,
+      temperature: 0.1, // Lower for structured extraction
       maxOutputTokens: 2048,
     },
   };
