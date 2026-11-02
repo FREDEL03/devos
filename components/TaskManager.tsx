@@ -2,7 +2,6 @@
 
 import React, { useState, useTransition, useMemo } from "react";
 import {
-  CheckSquare,
   Search,
   Plus,
   Filter,
@@ -13,7 +12,6 @@ import {
   Loader2,
 } from "./icons";
 import { Priority, Task, TaskStatus, Project } from "./types";
-import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { TaskBoard } from "./TaskBoard";
 import { TaskDetailModal } from "./TaskDetailModal";
@@ -44,7 +42,6 @@ export function TaskManager({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "deadline" | "priority">("newest");
-  const [viewMode, setViewMode] = useState<"list" | "board">("list");
 
   // Screenshot import state
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
@@ -382,26 +379,6 @@ export function TaskManager({
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          {/* View Switcher */}
-          <div className="flex items-center rounded-lg bg-black/40 border border-white/5 p-1">
-            {[
-              { id: "list", label: "List" },
-              { id: "board", label: "Board" },
-            ].map((view) => (
-              <button
-                key={view.id}
-                onClick={() => setViewMode(view.id as "list" | "board")}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  viewMode === view.id
-                    ? "bg-violet-600 text-white"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                {view.label}
-              </button>
-            ))}
-          </div>
-
           <button
             onClick={handleOpenScreenshotImport}
             className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
@@ -506,57 +483,15 @@ export function TaskManager({
       </div>
 
       {/* Task Display */}
-      {viewMode === "list" ? (
-        <div className="space-y-3">
-          {filteredTasks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-[#121217] py-16 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-zinc-500 mb-3">
-                <CheckSquare className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-semibold text-zinc-300">No tasks found</h3>
-              <p className="mt-1 text-xs text-zinc-500 max-w-sm">
-                {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
-                  ? "No tasks match your search and filter criteria. Try resetting filters."
-                  : "You don't have any tasks in Supabase yet. Click 'New Task' to create your first deliverable."}
-              </p>
-              {(searchQuery || statusFilter !== "all" || priorityFilter !== "all") && (
-                <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setStatusFilter("all");
-                    setPriorityFilter("all");
-                  }}
-                  className="mt-3 text-xs text-violet-400 hover:text-violet-300 underline underline-offset-4"
-                >
-                  Clear all filters
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={handleToggleComplete}
-                  onEdit={handleOpenEdit}
-                  onDelete={handleDeleteTask}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <TaskBoard
-          tasks={tasks}
-          projects={projects}
-          onTasksChange={setTasks}
-          onOpenTaskDetail={handleOpenTaskDetail}
-          onEditTask={handleOpenEdit}
-          onDeleteTask={handleDeleteTask}
-          onToggleComplete={handleToggleComplete}
-        />
-      )}
+      <TaskBoard
+        tasks={tasks}
+        projects={projects}
+        onTasksChange={setTasks}
+        onOpenTaskDetail={handleOpenTaskDetail}
+        onEditTask={handleOpenEdit}
+        onDeleteTask={handleDeleteTask}
+        onToggleComplete={handleToggleComplete}
+      />
 
       {/* Modal dialog for create/edit */}
       <TaskModal

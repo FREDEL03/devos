@@ -102,7 +102,6 @@ export function TaskColumn({
                 <Plus className="h-4 w-4 text-zinc-500" />
               </div>
               <p className="text-xs text-zinc-400">No tasks</p>
-              <p className="mt-1 text-[11px] text-zinc-500">Click "Add Task" below</p>
             </div>
           ) : (
             tasks.map((task) => (
