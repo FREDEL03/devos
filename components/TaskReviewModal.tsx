@@ -10,6 +10,8 @@ export interface DraftTask {
   priority?: Priority;
   due_date?: string;
   selected: boolean;
+  imageBase64?: string;
+  imageMimeType?: string;
 }
 
 interface TaskReviewModalProps {

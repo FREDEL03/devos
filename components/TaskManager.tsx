@@ -185,6 +185,7 @@ export function TaskManager({
 
   // Screenshot import functions
   const handleOpenScreenshotImport = () => {
+    setIsModalOpen(false); // close task modal
     setIsScreenshotModalOpen(true);
   };
 
@@ -213,13 +214,15 @@ export function TaskManager({
         throw new Error(data.error || "Failed to analyze screenshot");
       }
 
-      // Convert to draft tasks
+      // Convert to draft tasks with image
       const drafts: DraftTask[] = data.tasks.map((task: any) => ({
         title: task.title,
         description: task.description,
         priority: task.priority,
         due_date: task.due_date,
         selected: true,
+        imageBase64: base64,
+        imageMimeType: file.type,
       }));
 
       if (drafts.length === 0) {
@@ -251,9 +254,15 @@ export function TaskManager({
     try {
       const createdTasks: Task[] = [];
       for (const draft of tasksToSave) {
+        // Embed image in description if present
+        let finalDescription = draft.description || "";
+        if (draft.imageBase64 && draft.imageMimeType) {
+          const imageMarkdown = `\n\n![Uploaded Image](${draft.imageBase64})`;
+          finalDescription = finalDescription ? finalDescription + imageMarkdown : imageMarkdown.trim();
+        }
         const input: TaskInput = {
           title: draft.title,
-          description: draft.description,
+          description: finalDescription || undefined,
           priority: draft.priority,
           due_date: draft.due_date,
         };
@@ -319,13 +328,6 @@ export function TaskManager({
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
           <button
-            onClick={handleOpenScreenshotImport}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>Import from Screenshot</span>
-          </button>
-          <button
             onClick={handleOpenCreate}
             className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-xs font-medium text-white shadow-sm shadow-violet-700/30 hover:bg-violet-500 active:scale-98 transition-all"
           >
@@ -342,9 +344,6 @@ export function TaskManager({
         projects={projects}
         onTasksChange={setTasks}
         onOpenTaskDetail={handleOpenTaskDetail}
-        onEditTask={handleOpenEdit}
-        onDeleteTask={handleDeleteTask}
-        onToggleComplete={handleToggleComplete}
       />
 
       {/* Modal dialog for create/edit */}
@@ -357,6 +356,7 @@ export function TaskManager({
         onSubmit={handleCreateOrUpdateTask}
         initialTask={editingTask}
         projects={projects}
+        onImportImage={handleOpenScreenshotImport}
       />
 
       {/* Screenshot upload modal */}

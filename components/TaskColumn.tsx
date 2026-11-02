@@ -12,9 +12,6 @@ interface TaskColumnProps {
   tasks: Task[];
   count: number;
   onTaskClick: (task: Task) => void;
-  onEditTask: (task: Task) => void;
-  onDeleteTask: (id: string) => void;
-  onToggleComplete: (id: string, currentCompleted: boolean) => void;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
   isUpdating: boolean;
 }
@@ -26,9 +23,6 @@ export function TaskColumn({
   tasks,
   count,
   onTaskClick,
-  onEditTask,
-  onDeleteTask,
-  onToggleComplete,
   onStatusChange,
   isUpdating,
 }: TaskColumnProps) {
@@ -136,9 +130,6 @@ export function TaskColumn({
                 <div onClick={() => onTaskClick(task)}>
                   <TaskCard
                     task={task}
-                    onToggleComplete={onToggleComplete}
-                    onEdit={onEditTask}
-                    onDelete={onDeleteTask}
                   />
                 </div>
               </div>

@@ -11,9 +11,6 @@ interface TaskBoardProps {
   projects: Project[] | { id: string; name: string }[];
   onTasksChange: (tasks: Task[]) => void;
   onOpenTaskDetail: (task: Task) => void;
-  onEditTask: (task: Task) => void;
-  onDeleteTask: (id: string) => void;
-  onToggleComplete: (id: string, currentCompleted: boolean) => void;
 }
 
 const COLUMNS: { id: TaskStatus; title: string; description: string }[] = [
@@ -44,9 +41,6 @@ export function TaskBoard({
   projects,
   onTasksChange,
   onOpenTaskDetail,
-  onEditTask,
-  onDeleteTask,
-  onToggleComplete,
 }: TaskBoardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -146,9 +140,6 @@ export function TaskBoard({
             tasks={tasksByColumn[column.id]}
             count={tasksByColumn[column.id].length}
             onTaskClick={onOpenTaskDetail}
-            onEditTask={onEditTask}
-            onDeleteTask={onDeleteTask}
-            onToggleComplete={onToggleComplete}
             isUpdating={isUpdating}
             onStatusChange={handleStatusChange}
           />

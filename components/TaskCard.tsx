@@ -1,21 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { Check, Pencil, Trash2, Calendar, Clock } from "./icons";
+import React from "react";
+import { Check, Calendar } from "./icons";
 import { Priority, Task } from "./types";
 
 interface TaskCardProps {
   task: Task;
-  onToggleComplete: (id: string, currentCompleted: boolean) => void;
-  onEdit: (task: Task) => void;
-  onDelete: (id: string) => void;
 }
 
 export function TaskCard({
   task,
-  onToggleComplete,
-  onEdit,
-  onDelete,
 }: TaskCardProps) {
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
@@ -66,26 +60,23 @@ export function TaskCard({
     >
       <div>
         <div className="flex items-start gap-3">
-          {/* Checkbox button */}
-          <button
-            type="button"
-            onClick={() => onToggleComplete(task.id, task.completed)}
-            aria-label={`Mark task as ${task.completed ? "pending" : "completed"}`}
-            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+          {/* Placeholder for checkbox (no action) */}
+          <div
+            className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
               task.completed
-                ? "border-violet-500 bg-violet-600 text-white"
-                : "border-zinc-600 bg-zinc-900 group-hover:border-violet-400"
+                ? "border-violet-500 bg-violet-600"
+                : "border-zinc-600 bg-zinc-900"
             }`}
           >
-            {task.completed && <Check className="w-3 h-3 stroke-[3]" />}
-          </button>
+            {task.completed && <Check className="w-3 h-3 stroke-[3] text-white" />}
+          </div>
 
           <div className="flex-1 min-w-0">
             <h3
-              className={`text-sm font-medium leading-snug transition-colors ${
+              className={`text-sm font-medium leading-snug ${
                 task.completed
                   ? "line-through text-zinc-500"
-                  : "text-zinc-100 group-hover:text-white"
+                  : "text-zinc-100"
               }`}
             >
               {task.title}
@@ -134,25 +125,6 @@ export function TaskCard({
         </div>
       </div>
 
-      {/* Action buttons (Edit & Delete) */}
-      <div className="mt-3.5 pt-2.5 border-t border-white/5 flex items-center justify-end gap-1 pl-7">
-        <button
-          onClick={() => onEdit(task)}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
-          title="Edit task"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          <span>Edit</span>
-        </button>
-        <button
-          onClick={() => onDelete(task.id)}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-          title="Delete task"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Delete</span>
-        </button>
-      </div>
     </div>
   );
 }

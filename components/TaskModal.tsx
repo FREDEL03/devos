@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Plus, Pencil } from "./icons";
+import { X, Plus, Pencil, Image as ImageIcon } from "./icons";
 import { Priority, Task, TaskStatus } from "./types";
 import { TaskInput } from "@/app/tasks/actions";
 
@@ -11,6 +11,7 @@ interface TaskModalProps {
   onSubmit: (taskData: TaskInput) => Promise<{ error?: string } | void>;
   initialTask?: Task | null;
   projects?: { id: string; name: string }[] | string[];
+  onImportImage?: () => void;
 }
 
 export function TaskModal({
@@ -19,6 +20,7 @@ export function TaskModal({
   onSubmit,
   initialTask,
   projects = [],
+  onImportImage,
 }: TaskModalProps) {
   const isEditing = Boolean(initialTask);
 
@@ -33,7 +35,7 @@ export function TaskModal({
 
   // Normalize project options
   const projectList: { id: string; name: string }[] = projects.map((p) =>
-    typeof p === "string" ? { id: p, name: p } : p
+    typeof p === "string" ? { id: p, name: p } : p,
   );
 
   useEffect(() => {
@@ -42,7 +44,9 @@ export function TaskModal({
       setDescription(initialTask.description || "");
       setProjectId(initialTask.project_id || "");
       setPriority(initialTask.priority || "Medium");
-      setStatus(initialTask.status || (initialTask.completed ? "completed" : "todo"));
+      setStatus(
+        initialTask.status || (initialTask.completed ? "completed" : "todo"),
+      );
       setDueDate(initialTask.due_date || initialTask.dueDate || "");
     } else {
       setTitle("");
@@ -103,7 +107,11 @@ export function TaskModal({
         <div className="flex items-center justify-between pb-4 border-b border-white/5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600/20 text-violet-400 border border-violet-500/30">
-              {isEditing ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {isEditing ? (
+                <Pencil className="w-4 h-4" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
             </div>
             <div>
               <h2 className="text-base font-semibold text-white">
@@ -116,13 +124,26 @@ export function TaskModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="rounded-lg p-1 text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onImportImage && (
+              <button
+                type="button"
+                onClick={onImportImage}
+                disabled={loading}
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-white/10 hover:text-white transition-all"
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Import from Image</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="rounded-lg p-1 text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -211,8 +232,8 @@ export function TaskModal({
                         ? p === "High"
                           ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
                           : p === "Medium"
-                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                          : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                            : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                         : "text-zinc-400 hover:text-zinc-200"
                     }`}
                   >

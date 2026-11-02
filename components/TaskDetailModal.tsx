@@ -283,13 +283,40 @@ export function TaskDetailModal({
                   />
                 ) : (
                   <div className="rounded-lg bg-zinc-900/50 border border-white/5 p-4">
-                    <p className="text-sm text-zinc-300 whitespace-pre-wrap">
-                      {task.description || (
-                        <span className="text-zinc-500 italic">
-                          No description provided
-                        </span>
-                      )}
-                    </p>
+                    {task.description ? (
+                      <>
+                        <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+                          {task.description.replace(/!\[[^\]]*\]\(data:image\/[^)]+\)/g, '').trim() || (
+                            <span className="text-zinc-500 italic">
+                              No description provided
+                            </span>
+                          )}
+                        </p>
+                        {/* Display any embedded images */}
+                        {(() => {
+                          const imageMatch = task.description.match(/!\[[^\]]*\]\((data:image\/[^)]+)\)/);
+                          if (imageMatch) {
+                            const imageUrl = imageMatch[1];
+                            return (
+                              <div className="mt-4 pt-4 border-t border-white/10">
+                                <p className="text-xs text-zinc-400 mb-2">Uploaded Image:</p>
+                                <img
+                                  src={imageUrl}
+                                  alt="Task screenshot"
+                                  className="max-w-full h-auto rounded border border-white/10"
+                                  style={{ maxHeight: '300px' }}
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </>
+                    ) : (
+                      <span className="text-zinc-500 italic">
+                        No description provided
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
