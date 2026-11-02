@@ -1,15 +1,9 @@
 "use client";
 
-import React, { useState, useTransition, useMemo } from "react";
+import React, { useState, useTransition } from "react";
 import {
-  Search,
   Plus,
-  Filter,
-  ArrowUpDown,
-  X,
-  Check,
   Image as ImageIcon,
-  Loader2,
 } from "./icons";
 import { Priority, Task, TaskStatus, Project } from "./types";
 import { TaskModal } from "./TaskModal";
@@ -38,10 +32,6 @@ export function TaskManager({
   onTasksChange,
 }: TaskManagerProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "deadline" | "priority">("newest");
 
   // Screenshot import state
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
@@ -308,59 +298,8 @@ export function TaskManager({
     }
   };
 
-  // Filter & Sort
-  const filteredTasks = useMemo(() => {
-    let result = tasks.filter((t) => {
-      const matchesSearch =
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (t.project && t.project.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "completed" && (t.completed || t.status === "completed")) ||
-        (statusFilter === "in_progress" && t.status === "in_progress" && !t.completed) ||
-        (statusFilter === "review" && t.status === "review" && !t.completed) ||
-        (statusFilter === "todo" && !t.completed && t.status !== "in_progress" && t.status !== "review");
-
-      const matchesPriority =
-        priorityFilter === "all" || t.priority === priorityFilter;
-
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-
-    // Sorting
-    result.sort((a, b) => {
-      if (sortBy === "newest") {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
-      }
-      if (sortBy === "oldest") {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateA - dateB;
-      }
-      if (sortBy === "deadline") {
-        const dA = a.due_date || a.dueDate || "zz";
-        const dB = b.due_date || b.dueDate || "zz";
-        return dA.localeCompare(dB);
-      }
-      if (sortBy === "priority") {
-        const pOrder: Record<Priority, number> = { High: 3, Medium: 2, Low: 1 };
-        return (pOrder[b.priority] || 0) - (pOrder[a.priority] || 0);
-      }
-      return 0;
-    });
-
-    return result;
-  }, [tasks, searchQuery, statusFilter, priorityFilter, sortBy]);
-
   // Statistics counters
   const totalCount = tasks.length;
-  const pendingCount = tasks.filter((t) => !t.completed).length;
-  const inProgressCount = tasks.filter((t) => t.status === "in_progress" && !t.completed).length;
-  const completedCount = tasks.filter((t) => t.completed || t.status === "completed").length;
 
   return (
     <div className="space-y-6">
@@ -396,91 +335,6 @@ export function TaskManager({
         </div>
       </div>
 
-      {/* Controls Bar: Search, Filters, Sorting */}
-      <div className="rounded-xl border border-white/5 bg-[#121217] p-4 space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search tasks by title, description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg bg-zinc-900 border border-white/10 pl-9 pr-8 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick status tabs */}
-          <div className="flex items-center rounded-lg bg-black/40 p-1 border border-white/5 text-xs self-start md:self-auto overflow-x-auto max-w-full">
-            {[
-              { id: "all", label: `All (${totalCount})` },
-              { id: "todo", label: `To Do (${pendingCount - inProgressCount})` },
-              { id: "in_progress", label: `In Progress (${inProgressCount})` },
-              { id: "review", label: `Review (${tasks.filter((t) => t.status === "review" && !t.completed).length})` },
-              { id: "completed", label: `Done (${completedCount})` },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`whitespace-nowrap rounded-md px-2.5 py-1 text-xs transition-colors ${
-                  statusFilter === tab.id
-                    ? "bg-violet-600/30 text-violet-200 border border-violet-500/30 font-medium"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Second row: Priority Filter & Sort Selector */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/5 text-xs text-zinc-400">
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-[11px] text-zinc-500">Priority:</span>
-            <div className="flex items-center gap-1">
-              {["all", "High", "Medium", "Low"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPriorityFilter(p)}
-                  className={`rounded px-2 py-0.5 text-[11px] transition-colors ${
-                    priorityFilter === p
-                      ? "bg-violet-600/20 text-violet-300 border border-violet-500/30"
-                      : "bg-white/[0.02] text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  {p === "all" ? "All Priorities" : p}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 ml-auto">
-            <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-[11px] text-zinc-500">Sort:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="rounded-lg bg-zinc-900 border border-white/10 px-2.5 py-1 text-xs text-zinc-200 focus:outline-none focus:border-violet-500"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="deadline">By Deadline</option>
-              <option value="priority">By Priority (High to Low)</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Task Display */}
       <TaskBoard
