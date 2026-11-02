@@ -146,21 +146,6 @@ export function TaskColumn({
           )}
         </div>
       </div>
-
-      {/* Column Footer */}
-      <div className="p-3 border-t border-white/5">
-        <button
-          onClick={() => {
-            // Open task creation modal with pre-selected status
-            // This will be handled by parent
-            console.log("Add task to column:", id);
-          }}
-          className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/10 bg-white/5 py-2 text-xs text-zinc-400 hover:text-zinc-200 hover:border-white/20 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Task</span>
-        </button>
-      </div>
     </div>
   );
 }
