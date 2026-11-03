@@ -1,9 +1,79 @@
 "use client";
 
 import React from "react";
+import { useDroppable, useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Task, TaskStatus } from "./types";
 import { TaskCard } from "./TaskCard";
 import { Plus, Loader2, ChevronDown, ChevronUp } from "./icons";
+
+interface DraggableTaskProps {
+  task: Task;
+  onTaskClick: (task: Task) => void;
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
+  columnId: TaskStatus;
+  getPrevStatus: (current: TaskStatus) => TaskStatus | null;
+  getNextStatus: (current: TaskStatus) => TaskStatus | null;
+}
+
+function DraggableTask({
+  task,
+  onTaskClick,
+  onStatusChange,
+  columnId,
+  getPrevStatus,
+  getNextStatus,
+}: DraggableTaskProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group relative cursor-grab active:cursor-grabbing"
+      {...attributes}
+      {...listeners}
+    >
+      {/* Status Change Buttons */}
+      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        {getPrevStatus(columnId) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStatusChange(task.id, getPrevStatus(columnId)!);
+            }}
+            className="p-1 rounded bg-black/60 border border-white/10 hover:bg-black/80"
+            title={`Move to ${getPrevStatus(columnId)}`}
+          >
+            <ChevronUp className="w-3 h-3 text-zinc-300 rotate-270" />
+          </button>
+        )}
+        {getNextStatus(columnId) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStatusChange(task.id, getNextStatus(columnId)!);
+            }}
+            className="p-1 rounded bg-black/60 border border-white/10 hover:bg-black/80"
+            title={`Move to ${getNextStatus(columnId)}`}
+          >
+            <ChevronUp className="w-3 h-3 text-zinc-300 rotate-90" />
+          </button>
+        )}
+      </div>
+      <div onClick={() => onTaskClick(task)}>
+        <TaskCard task={task} />
+      </div>
+    </div>
+  );
+}
 
 interface TaskColumnProps {
   id: TaskStatus;
@@ -26,6 +96,10 @@ export function TaskColumn({
   onStatusChange,
   isUpdating,
 }: TaskColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+  });
+
   const getColumnColor = (columnId: TaskStatus) => {
     switch (columnId) {
       case "todo":
@@ -68,7 +142,10 @@ export function TaskColumn({
   };
 
   return (
-    <div className={`flex flex-col rounded-xl border-2 ${getColumnColor(id)}`}>
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col rounded-xl border-2 ${getColumnColor(id)} ${isOver ? "ring-2 ring-violet-500 ring-inset" : ""}`}
+    >
       {/* Column Header */}
       <div className="p-4 border-b border-white/5">
         <div className="flex items-center justify-between">
@@ -99,40 +176,15 @@ export function TaskColumn({
             </div>
           ) : (
             tasks.map((task) => (
-              <div key={task.id} className="group relative">
-                {/* Status Change Buttons */}
-                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  {getPrevStatus(id) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStatusChange(task.id, getPrevStatus(id)!);
-                      }}
-                      className="p-1 rounded bg-black/60 border border-white/10 hover:bg-black/80"
-                      title={`Move to ${getPrevStatus(id)}`}
-                    >
-                      <ChevronUp className="w-3 h-3 text-zinc-300 rotate-270" />
-                    </button>
-                  )}
-                  {getNextStatus(id) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStatusChange(task.id, getNextStatus(id)!);
-                      }}
-                      className="p-1 rounded bg-black/60 border border-white/10 hover:bg-black/80"
-                      title={`Move to ${getNextStatus(id)}`}
-                    >
-                      <ChevronUp className="w-3 h-3 text-zinc-300 rotate-90" />
-                    </button>
-                  )}
-                </div>
-                <div onClick={() => onTaskClick(task)}>
-                  <TaskCard
-                    task={task}
-                  />
-                </div>
-              </div>
+              <DraggableTask
+                key={task.id}
+                task={task}
+                onTaskClick={onTaskClick}
+                onStatusChange={onStatusChange}
+                columnId={id}
+                getPrevStatus={getPrevStatus}
+                getNextStatus={getNextStatus}
+              />
             ))
           )}
         </div>

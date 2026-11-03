@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  closestCorners,
+} from "@dnd-kit/core";
 import { Task, TaskStatus, Project } from "./types";
 import { TaskColumn } from "./TaskColumn";
+import { TaskCard } from "./TaskCard";
 import { updateTask } from "@/app/tasks/actions";
 import { toast } from "./Toast";
 
@@ -43,6 +54,15 @@ export function TaskBoard({
   onOpenTaskDetail,
 }: TaskBoardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Group tasks by status
   const tasksByColumn = useMemo(() => {
@@ -65,6 +85,33 @@ export function TaskBoard({
 
     return groups;
   }, [tasks]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = tasks.find((t) => t.id === active.id);
+    setActiveTask(task || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) {
+      setActiveTask(null);
+      return;
+    }
+
+    const taskId = active.id as string;
+    const newStatus = over.id as TaskStatus;
+
+    // Only change status if different column
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) {
+      setActiveTask(null);
+      return;
+    }
+
+    handleStatusChange(taskId, newStatus);
+    setActiveTask(null);
+  };
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     const task = tasks.find((t) => t.id === taskId);
@@ -123,28 +170,42 @@ export function TaskBoard({
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="text-violet-400">Note:</span>
-            <span>Drag-and-drop requires @dnd-kit installation</span>
+            <span className="text-violet-400">Tip:</span>
+            <span>Hold and drag tasks to move between columns</span>
           </div>
         </div>
       </div>
 
-      {/* Board Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
-        {COLUMNS.map((column) => (
-          <TaskColumn
-            key={column.id}
-            id={column.id}
-            title={column.title}
-            description={column.description}
-            tasks={tasksByColumn[column.id]}
-            count={tasksByColumn[column.id].length}
-            onTaskClick={onOpenTaskDetail}
-            isUpdating={isUpdating}
-            onStatusChange={handleStatusChange}
-          />
-        ))}
-      </div>
+      {/* Board Columns with DnD */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1">
+          {COLUMNS.map((column) => (
+            <TaskColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              description={column.description}
+              tasks={tasksByColumn[column.id]}
+              count={tasksByColumn[column.id].length}
+              onTaskClick={onOpenTaskDetail}
+              isUpdating={isUpdating}
+              onStatusChange={handleStatusChange}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeTask && (
+            <div className="rotate-3 opacity-80">
+              <TaskCard task={activeTask} />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
 
       {/* Board Help */}
       <div className="mt-6 pt-4 border-t border-white/5 text-xs text-zinc-500">
