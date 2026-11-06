@@ -104,7 +104,6 @@ export function TaskDetailModal({
     try {
       const res = await updateTask(task.id, {
         status: newStatus,
-        completed: newStatus === "completed",
       });
 
       if (res?.error) {

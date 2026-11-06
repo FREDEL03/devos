@@ -173,6 +173,7 @@ export function TaskManager({
     setTasks((prev) =>
       prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
+    setDetailTask((d) => (d?.id === updatedTask.id ? updatedTask : d));
     onTasksChange?.(
       tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
