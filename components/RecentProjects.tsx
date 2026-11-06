@@ -4,9 +4,16 @@ import { FolderGit2, ArrowUpRight } from "./icons";
 
 interface RecentProjectsProps {
   projects: Project[];
+  onViewAll: () => void;
 }
 
-export function RecentProjects({ projects }: RecentProjectsProps) {
+const MAX_VISIBLE = 4;
+
+export function RecentProjects({ projects, onViewAll }: RecentProjectsProps) {
+  const recent = [...projects]
+    .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""))
+    .slice(0, MAX_VISIBLE);
+
   const getStatusBadge = (status: Project["status"]) => {
     switch (status) {
       case "Planning":
@@ -34,8 +41,13 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
               {projects.length}
             </span>
           </h2>
-          <p className="text-xs text-zinc-500">Active repositories and shipping roadmap</p>
+          <p className="text-xs text-zinc-500">Most recently updated</p>
         </div>
+        {projects.length > MAX_VISIBLE && (
+          <button onClick={onViewAll} className="text-xs font-medium text-violet-300 hover:text-violet-200">
+            View all →
+          </button>
+        )}
       </div>
 
       {projects.length === 0 ? (
@@ -50,7 +62,7 @@ export function RecentProjects({ projects }: RecentProjectsProps) {
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {projects.map((project) => (
+          {recent.map((project) => (
             <div
               key={project.id}
               className="group relative flex flex-col justify-between rounded-lg border border-white/5 bg-white/[0.02] p-4 transition-all duration-150 hover:border-violet-500/30 hover:bg-white/[0.04]"

@@ -2,13 +2,26 @@
 
 import React, { useState } from "react";
 import { Check, Plus, Search, Filter } from "./icons";
-import { Task, Priority } from "./types";
+import { Task, Priority, isOverdue } from "./types";
+
+const MAX_VISIBLE = 8;
+const PRIORITY_RANK: Record<Priority, number> = { High: 0, Medium: 1, Low: 2 };
+
+// Pending first, then overdue, earliest due date, highest priority.
+const byUrgency = (a: Task, b: Task) => {
+  if (a.completed !== b.completed) return a.completed ? 1 : -1;
+  if (isOverdue(a) !== isOverdue(b)) return isOverdue(a) ? -1 : 1;
+  const da = a.due_date || a.dueDate || "9999";
+  const db = b.due_date || b.dueDate || "9999";
+  return da.localeCompare(db) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+};
 
 interface TodayTasksProps {
   tasks: Task[];
   searchQuery: string;
   onToggleTask: (id: string) => void;
   onOpenNewTask: () => void;
+  onViewAll: () => void;
 }
 
 export function TodayTasks({
@@ -16,6 +29,7 @@ export function TodayTasks({
   searchQuery,
   onToggleTask,
   onOpenNewTask,
+  onViewAll,
 }: TodayTasksProps) {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
 
@@ -31,6 +45,7 @@ export function TodayTasks({
     if (filter === "completed") return matchesSearch && t.completed;
     return matchesSearch;
   });
+  const visibleTasks = [...filteredTasks].sort(byUrgency).slice(0, MAX_VISIBLE);
 
   const getPriorityBadge = (priority: Priority) => {
     switch (priority) {
@@ -49,7 +64,7 @@ export function TodayTasks({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
         <div>
           <h2 className="text-base font-semibold text-white tracking-tight flex items-center gap-2">
-            Today&apos;s Tasks
+            Up Next
             <span className="rounded-full bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 text-xs text-violet-400 font-mono">
               {filteredTasks.length}
             </span>
@@ -100,7 +115,7 @@ export function TodayTasks({
             </p>
           </div>
         ) : (
-          filteredTasks.map((task) => (
+          visibleTasks.map((task) => (
             <div
               key={task.id}
               onClick={() => onToggleTask(task.id)}
@@ -155,14 +170,25 @@ export function TodayTasks({
                   </span>
 
                   {(task.due_date || task.dueDate) && (
-                    <span className="text-zinc-500 text-[11px]">
-                      • {task.due_date || task.dueDate}
+                    <span
+                      className={`text-[11px] ${isOverdue(task) ? "text-rose-400 font-medium" : "text-zinc-500"}`}
+                    >
+                      • {isOverdue(task) ? "Overdue " : ""}
+                      {task.due_date || task.dueDate}
                     </span>
                   )}
                 </div>
               </div>
             </div>
           ))
+        )}
+        {filteredTasks.length > MAX_VISIBLE && (
+          <button
+            onClick={onViewAll}
+            className="w-full rounded-lg py-2 text-xs font-medium text-violet-300 hover:bg-white/5 transition-colors"
+          >
+            View all {filteredTasks.length} tasks →
+          </button>
         )}
       </div>
     </div>

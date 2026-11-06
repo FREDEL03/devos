@@ -7,6 +7,7 @@ import { StatCard } from "@/components/StatCard";
 import { TodayTasks } from "@/components/TodayTasks";
 import { RecentProjects } from "@/components/RecentProjects";
 import { QuickActions } from "@/components/QuickActions";
+import { RecentWorkLogs } from "@/components/RecentWorkLogs";
 import { TaskModal } from "@/components/TaskModal";
 import { TaskManager } from "@/components/TaskManager";
 import { ProjectManager } from "@/components/ProjectManager";
@@ -25,7 +26,7 @@ import {
   CheckSquare,
   Code2,
 } from "@/components/icons";
-import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings, DEFAULT_USER_SETTINGS } from "@/components/types";
+import { NavTab, Task, Project, CodeSnippet, WorkLog, LearningEntry, UserSettings, DEFAULT_USER_SETTINGS, isOverdue } from "@/components/types";
 import { clientSignout } from "@/lib/auth/client";
 import { createTask, updateTask, TaskInput } from "@/app/tasks/actions";
 import { createSnippet, SnippetInput } from "@/app/snippets/actions";
@@ -77,6 +78,10 @@ export function DashboardClient({
   const pendingTasksCount = tasks.filter((t) => !t.completed).length;
   const completedTasksCount = tasks.filter((t) => t.completed).length;
   const savedSnippetsCount = snippets.length;
+  const inProgressProjectsCount = projects.filter((p) => p.status === "In Progress").length;
+  const overdueTasksCount = tasks.filter(isOverdue).length;
+  const completionRate = tasks.length ? Math.round((completedTasksCount / tasks.length) * 100) : 0;
+  const snippetLanguagesCount = new Set(snippets.map((s) => s.language)).size;
 
   // Task actions with Supabase persistence
   const handleToggleTask = (id: string) => {
@@ -185,7 +190,7 @@ export function DashboardClient({
                   subtext={
                     activeProjectsCount === 0
                       ? "No active projects"
-                      : `${activeProjectsCount} in active sprint`
+                      : `${inProgressProjectsCount} in progress`
                   }
                   icon={FolderGit2}
                   accentColor="violet"
@@ -193,14 +198,14 @@ export function DashboardClient({
                 <StatCard
                   title="Pending Tasks"
                   value={pendingTasksCount}
-                  subtext="Synchronized with Supabase"
+                  subtext={overdueTasksCount ? `${overdueTasksCount} overdue` : "Nothing overdue"}
                   icon={Clock}
                   accentColor="amber"
                 />
                 <StatCard
                   title="Completed Tasks"
                   value={completedTasksCount}
-                  subtext="Live PostgreSQL count"
+                  subtext={`${completionRate}% completion rate`}
                   icon={CheckSquare}
                   accentColor="emerald"
                 />
@@ -210,7 +215,7 @@ export function DashboardClient({
                   subtext={
                     savedSnippetsCount === 0
                       ? "No saved snippets"
-                      : "Synchronized with Supabase"
+                      : `${snippetLanguagesCount} language${snippetLanguagesCount === 1 ? "" : "s"}`
                   }
                   icon={Code2}
                   accentColor="indigo"
@@ -233,12 +238,15 @@ export function DashboardClient({
                     searchQuery={searchQuery}
                     onToggleTask={handleToggleTask}
                     onOpenNewTask={() => setIsTaskModalOpen(true)}
+                    onViewAll={() => setActiveTab("Tasks")}
                   />
                 </div>
                 <div className="lg:col-span-5">
-                  <RecentProjects projects={projects} />
+                  <RecentProjects projects={projects} onViewAll={() => setActiveTab("Projects")} />
                 </div>
               </div>
+
+              <RecentWorkLogs logs={workLogs} />
             </>
           ) : activeTab === "Tasks" ? (
             <TaskManager
