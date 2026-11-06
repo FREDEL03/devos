@@ -1,18 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Bot,
-  Sparkles,
-  Copy,
-  Check,
-  Send,
-  X,
-  Code2,
-  Terminal,
-  AlertCircle,
-  RotateCcw,
-} from "./icons";
+import React, { useEffect, useRef, useState } from "react";
+import { Bot, Sparkles, Copy, Check, Send, Code2, AlertCircle, RotateCcw } from "./icons";
 import { AITaskType, SUPPORTED_TASK_TYPES } from "@/lib/ai/gemini";
 import { toast } from "./Toast";
 import { confirmDialog } from "./ConfirmDialog";
@@ -20,141 +9,103 @@ import { confirmDialog } from "./ConfirmDialog";
 interface Message {
   id: string;
   role: "user" | "assistant";
-  taskType: AITaskType;
-  prompt: string;
-  contextCode?: string;
   content: string;
+  contextCode?: string;
   model?: string;
   timestamp: string;
 }
 
-const QUICK_PROMPTS: Record<AITaskType, { label: string; prompt: string; code?: string }[]> = {
-  explain_error: [
-    {
-      label: "TypeError: undefined is not a function",
-      prompt: "Why am I getting this TypeError when calling a function on an object?",
-      code: "const data = await res.json();\ndata.users.map(u => u.name); // TypeError: Cannot read properties of undefined (reading 'map')",
-    },
-    {
-      label: "PostgreSQL: relation does not exist",
-      prompt: "How do I resolve relation does not exist error in Supabase / PostgreSQL?",
-      code: "ERROR: 42P01: relation \"tasks\" does not exist\nLINE 1: SELECT * FROM tasks",
-    },
-  ],
-  explain_code: [
-    {
-      label: "React Debounce Hook",
-      prompt: "Explain how this custom React debounce hook works, its lifecycle, and edge cases.",
-      code: "export function useDebounce<T>(value: T, delay = 300): T {\n  const [debounced, setDebounced] = React.useState(value);\n  React.useEffect(() => {\n    const handler = setTimeout(() => setDebounced(value), delay);\n    return () => clearTimeout(handler);\n  }, [value, delay]);\n  return debounced;\n}",
-    },
-    {
-      label: "Exponential Backoff",
-      prompt: "Analyze this exponential backoff retry implementation for potential issues.",
-      code: "async function fetchRetry(url, retries = 3, delay = 1000) {\n  try {\n    return await fetch(url);\n  } catch (err) {\n    if (retries <= 1) throw err;\n    await new Promise(r => setTimeout(r, delay));\n    return fetchRetry(url, retries - 1, delay * 2);\n  }\n}",
-    },
-  ],
-  debug_steps: [
-    {
-      label: "CORS Issue in Next.js",
-      prompt: "Provide step-by-step diagnostic steps to troubleshoot a CORS preflight failure between Next.js frontend and an external API.",
-    },
-    {
-      label: "Supabase Session Token Refresh Loop",
-      prompt: "Give me debugging steps to trace an infinite authentication redirect loop in Next.js middleware.",
-    },
-  ],
-  explain_concept: [
-    {
-      label: "PostgreSQL Row Level Security (RLS)",
-      prompt: "Explain PostgreSQL Row Level Security (RLS), how auth.uid() works, and performance implications on large tables.",
-    },
-    {
-      label: "React 19 Server Actions vs API Routes",
-      prompt: "When should I use React Server Actions instead of Next.js Route Handlers in App Router?",
-    },
-  ],
-  improve_git: [
-    {
-      label: "Format Commit Message",
-      prompt: "Improve this into a clean Conventional Commit message and branch name: 'fixed bug where user could submit form twice while saving'",
-    },
-  ],
-  generate_pr: [
-    {
-      label: "Auth Token Rotation PR",
-      prompt: "Generate a structured PR description for adding token rotation in Next.js Edge middleware with unit tests and cookie encryption.",
-    },
-  ],
-  general_query: [
-    {
-      label: "Best Practice for Tailwind v4 tokens",
-      prompt: "What is the recommended method to declare custom CSS color tokens in Tailwind CSS v4 with CSS variables?",
-    },
-  ],
-  analyze_screenshot: [
-    {
-      label: "Upload a work ticket screenshot",
-      prompt: "Analyze the uploaded screenshot and extract tasks",
-    },
-  ],
-};
+const STARTERS: { label: string; type: AITaskType; prompt: string }[] = [
+  { label: "Explain an error", type: "explain_error", prompt: "Help me understand this error: " },
+  { label: "Explain code", type: "explain_code", prompt: "Explain what this code does: " },
+  { label: "Debug a problem", type: "debug_steps", prompt: "Give me debugging steps for: " },
+  { label: "Write a commit message", type: "improve_git", prompt: "Improve this into a Conventional Commit: " },
+];
+
+// Mode chips: everything except screenshot analysis (that lives in Tasks).
+const MODES = SUPPORTED_TASK_TYPES.filter((t) => t.type !== "analyze_screenshot");
+
+const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** Render text, turning ```fenced``` blocks into code boxes. */
+function MessageBody({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/```/).map((part, i) =>
+        i % 2 === 1 ? (
+          <pre
+            key={i}
+            className="my-2 overflow-x-auto rounded-lg border border-white/5 bg-black/60 p-3 font-mono text-xs text-zinc-200"
+          >
+            {part.replace(/^\w*\n/, "")}
+          </pre>
+        ) : (
+          <span key={i} className="whitespace-pre-wrap">
+            {part}
+          </span>
+        )
+      )}
+    </>
+  );
+}
 
 export function AIAssistant() {
-  const [taskType, setTaskType] = useState<AITaskType>("explain_error");
+  const [taskType, setTaskType] = useState<AITaskType>("general_query");
   const [prompt, setPrompt] = useState("");
   const [contextCode, setContextCode] = useState("");
-  const [showCodeInput, setShowCodeInput] = useState(true);
-
+  const [showCodeInput, setShowCodeInput] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   const handleCopy = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
-      toast.success("Copied to clipboard", { description: "AI response copied." });
       setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy", { description: "Clipboard permission denied." });
-      console.error("Copy failed:", err);
     }
   };
 
-  const handleClearSession = async () => {
+  const handleClear = async () => {
     const confirmed = await confirmDialog({
-      title: "Clear AI session history?",
-      description: "All messages in this session will be cleared.",
-      confirmText: "Clear History",
+      title: "Clear conversation?",
+      description: "All messages in this chat will be removed.",
+      confirmText: "Clear",
       cancelText: "Keep",
       variant: "warning",
     });
     if (confirmed) {
       setMessages([]);
-      toast.info("Session cleared");
+      setError(null);
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!prompt.trim() || loading) return;
-
-    const userPrompt = prompt.trim();
+  const send = async (text = prompt, type = taskType) => {
+    const userPrompt = text.trim();
+    if (!userPrompt || loading) return;
     const userCode = contextCode.trim() || undefined;
 
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      taskType,
-      prompt: userPrompt,
-      contextCode: userCode,
-      content: userPrompt,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+    // Prior turns as Gemini history (code attachments folded into the text).
+    const history = messages.map((m) => ({
+      role: m.role === "user" ? ("user" as const) : ("model" as const),
+      text: m.contextCode ? `${m.content}\n\n\`\`\`\n${m.contextCode}\n\`\`\`` : m.content,
+    }));
 
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `u-${Date.now()}`, role: "user", content: userPrompt, contextCode: userCode, timestamp: now() },
+    ]);
     setPrompt("");
+    setContextCode("");
+    setShowCodeInput(false);
     setLoading(true);
     setError(null);
 
@@ -162,30 +113,15 @@ export function AIAssistant() {
       const res = await fetch("/api/ai/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          taskType,
-          prompt: userPrompt,
-          contextCode: userCode,
-        }),
+        body: JSON.stringify({ taskType: type, prompt: userPrompt, contextCode: userCode, history }),
       });
-
       const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}: Failed to get response`);
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || `HTTP ${res.status}: Failed to get response`);
-      }
-
-      const assistantMsg: Message = {
-        id: `ai-${Date.now()}`,
-        role: "assistant",
-        taskType,
-        prompt: userPrompt,
-        content: data.content,
-        model: data.model,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => [
+        ...prev,
+        { id: `a-${Date.now()}`, role: "assistant", content: data.content, model: data.model, timestamp: now() },
+      ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to communicate with AI Assistant.";
       setError(msg);
@@ -195,271 +131,216 @@ export function AIAssistant() {
     }
   };
 
-  const handleApplyQuickPrompt = (qp: { prompt: string; code?: string }) => {
-    setPrompt(qp.prompt);
-    if (qp.code) {
-      setContextCode(qp.code);
-      setShowCodeInput(true);
-    }
-  };
-
-  const activeTaskObj = SUPPORTED_TASK_TYPES.find((t) => t.type === taskType);
-  const currentQuickPrompts = QUICK_PROMPTS[taskType] || [];
-  const charCount = (prompt + contextCode).length;
+  const activeMode = MODES.find((t) => t.type === taskType);
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <span>DevOS AI Assistant</span>
-            <span className="rounded-full bg-violet-500/10 border border-violet-500/20 px-2.5 py-0.5 text-xs text-violet-400 font-mono">
-              Powered by Google Gemini
-            </span>
-          </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Error diagnostics, code breakdown, debugging roadmaps, and Conventional Git generation
-          </p>
+    <div className="mx-auto flex h-[calc(100vh-9rem)] min-h-[480px] max-w-4xl flex-col rounded-xl border border-white/5 bg-[#121217]">
+      {/* Title bar */}
+      <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-600/20 text-violet-300">
+            <Bot className="h-4 w-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-white">DevOS AI Assistant</h2>
+            <p className="font-mono text-[10px] text-zinc-500">Powered by Google Gemini</p>
+          </div>
         </div>
-
         {messages.length > 0 && (
           <button
             type="button"
-            onClick={handleClearSession}
-            className="flex items-center gap-1.5 self-start sm:self-auto rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            onClick={handleClear}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Clear Session</span>
+            <RotateCcw className="h-3.5 w-3.5" />
+            New chat
           </button>
         )}
       </div>
 
-      {/* Task Mode Selector */}
-      <div className="rounded-xl border border-white/5 bg-[#121217] p-3">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
-          {SUPPORTED_TASK_TYPES.map((t) => (
+      {/* Conversation */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
+        {messages.length === 0 && !loading && (
+          <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+            <Sparkles className="h-8 w-8 text-violet-400" />
+            <div>
+              <p className="text-sm font-medium text-zinc-200">How can I help you today?</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Error diagnostics, code breakdown, debugging, and Conventional Git help.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {STARTERS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => {
+                    setTaskType(s.type);
+                    setPrompt(s.prompt);
+                  }}
+                  className="rounded-lg border border-white/5 bg-zinc-900/80 px-3 py-1.5 text-xs text-zinc-300 transition-all hover:border-violet-500/30 hover:bg-zinc-800 hover:text-violet-300"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((m) => (
+          <div key={m.id} className={`flex gap-2.5 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+            <div
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[10px] ${
+                m.role === "user"
+                  ? "border-violet-500/30 bg-violet-600/20 text-violet-300"
+                  : "border-emerald-500/30 bg-emerald-600/20 text-emerald-300"
+              }`}
+            >
+              {m.role === "user" ? "You" : <Bot className="h-3.5 w-3.5" />}
+            </div>
+            <div className={`group max-w-[85%] ${m.role === "user" ? "items-end" : ""}`}>
+              <div
+                className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed text-zinc-100 ${
+                  m.role === "user"
+                    ? "rounded-tr-sm bg-violet-600/25 border border-violet-500/20"
+                    : "rounded-tl-sm bg-zinc-900/70 border border-white/5"
+                }`}
+              >
+                <MessageBody text={m.content} />
+                {m.contextCode && (
+                  <pre className="mt-2 overflow-x-auto rounded-lg border border-white/5 bg-black/60 p-3 font-mono text-xs text-zinc-300">
+                    {m.contextCode}
+                  </pre>
+                )}
+              </div>
+              <div
+                className={`mt-1 flex items-center gap-2 text-[10px] text-zinc-500 ${
+                  m.role === "user" ? "justify-end" : ""
+                }`}
+              >
+                <span className="font-mono">{m.timestamp}</span>
+                {m.model && <span className="font-mono">{m.model}</span>}
+                {m.role === "assistant" && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(m.content, m.id)}
+                    className="flex items-center gap-1 hover:text-zinc-200"
+                  >
+                    {copiedId === m.id ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedId === m.id ? "Copied" : "Copy"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-center gap-2.5 text-xs text-violet-300">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-500/30 bg-emerald-600/20">
+              <Bot className="h-3.5 w-3.5 text-emerald-300" />
+            </div>
+            <div className="flex gap-1 rounded-2xl rounded-tl-sm border border-white/5 bg-zinc-900/70 px-4 py-3">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-violet-400" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-violet-400 [animation-delay:150ms]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-violet-400 [animation-delay:300ms]" />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertCircle className="h-4 w-4 text-rose-400" />
+              AI request failed
+            </div>
+            <p className="mt-1 pl-6 text-zinc-300">{error}</p>
+            {error.includes("GEMINI_API_KEY") && (
+              <p className="pl-6 pt-1 font-mono text-[11px] text-rose-300/80">
+                Tip: set GEMINI_API_KEY in .env.local and restart next dev.
+              </p>
+            )}
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Composer */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+        className="space-y-2 border-t border-white/5 p-3"
+      >
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {MODES.map((t) => (
             <button
               key={t.type}
               type="button"
-              onClick={() => {
-                setTaskType(t.type);
-                if (t.type === "explain_code" || t.type === "explain_error") {
-                  setShowCodeInput(true);
-                }
-              }}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              title={t.description}
+              onClick={() => setTaskType(t.type)}
+              className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
                 taskType === t.type
-                  ? "bg-violet-600/25 border border-violet-500/40 text-violet-200 shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                  ? "border border-violet-500/40 bg-violet-600/25 text-violet-200"
+                  : "border border-transparent text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-200"
               }`}
             >
               {t.label}
             </button>
           ))}
         </div>
-        {activeTaskObj && (
-          <p className="mt-2 text-[11px] text-zinc-500 px-1 font-mono">
-            Mode: {activeTaskObj.description}
-          </p>
-        )}
-      </div>
-
-      {/* Quick Prompt Suggestions */}
-      {currentQuickPrompts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-zinc-500 font-mono flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-violet-400" />
-            Templates:
-          </span>
-          {currentQuickPrompts.map((qp, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleApplyQuickPrompt(qp)}
-              className="rounded-lg bg-zinc-900/80 border border-white/5 px-2.5 py-1 text-xs text-zinc-300 hover:border-violet-500/30 hover:text-violet-300 hover:bg-zinc-800 transition-all text-left truncate max-w-xs"
-            >
-              {qp.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Error Banner */}
-      {error && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300 space-y-1">
-          <div className="flex items-center gap-2 font-semibold">
-            <AlertCircle className="w-4 h-4 text-rose-400" />
-            <span>AI Request Failed</span>
-          </div>
-          <p className="pl-6 text-zinc-300">{error}</p>
-          {error.includes("GEMINI_API_KEY") && (
-            <div className="pl-6 pt-1 text-[11px] text-rose-300/80 font-mono">
-              Tip: Set <span className="bg-black/40 px-1 py-0.5 rounded text-white">GEMINI_API_KEY=your_key</span> in <span className="underline">.env.local</span> and restart next dev.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Messages Thread */}
-      <div className="space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`rounded-xl border p-4 sm:p-5 transition-all ${
-              msg.role === "user"
-                ? "bg-zinc-900/60 border-white/10"
-                : "bg-[#121217] border-white/5"
-            }`}
-          >
-            {/* Header info */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/5 text-xs text-zinc-400">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-6 w-6 rounded-md flex items-center justify-center ${
-                    msg.role === "user"
-                      ? "bg-violet-600/20 text-violet-300 border border-violet-500/30"
-                      : "bg-emerald-600/20 text-emerald-300 border border-emerald-500/30"
-                  }`}
-                >
-                  {msg.role === "user" ? "You" : <Bot className="w-3.5 h-3.5" />}
-                </div>
-                <span className="font-semibold text-zinc-200">
-                  {msg.role === "user" ? "Your Inquiry" : "Gemini Engineering Assistant"}
-                </span>
-                {msg.model && (
-                  <span className="rounded bg-black/40 border border-white/5 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
-                    {msg.model}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-zinc-500">{msg.timestamp}</span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(msg.content, msg.id)}
-                  className="flex items-center gap-1 rounded border border-white/10 bg-zinc-900 px-2 py-0.5 text-[11px] font-medium text-zinc-300 hover:text-white hover:border-violet-500/30 transition-colors"
-                >
-                  {copiedId === msg.id ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Context code if user provided any */}
-            {msg.role === "user" && msg.contextCode && (
-              <div className="mt-3 rounded-lg border border-white/5 bg-black/60 p-3 overflow-x-auto text-xs font-mono text-zinc-300">
-                <pre>{msg.contextCode}</pre>
-              </div>
-            )}
-
-            {/* Content Body */}
-            <div className="mt-3 text-xs text-zinc-200 leading-relaxed space-y-2 whitespace-pre-wrap font-sans">
-              {msg.content}
-            </div>
-          </div>
-        ))}
-
-        {loading && (
-          <div className="flex items-center gap-3 rounded-xl border border-violet-500/20 bg-violet-600/5 p-4 text-xs text-violet-300 animate-pulse">
-            <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" />
-            <div className="space-y-0.5">
-              <span className="font-semibold">Gemini is reasoning and compiling resolution...</span>
-              <p className="text-[11px] text-zinc-500">Analyzing syntax trees, confirmed error causes, and engineering trade-offs</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input Composer Form */}
-      <form onSubmit={handleSubmit} className="rounded-xl border border-white/5 bg-[#121217] p-4 sm:p-5 space-y-4">
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-zinc-300">
-              Prompt / Question <span className="text-rose-400">*</span>
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowCodeInput(!showCodeInput)}
-              className="text-[11px] text-violet-400 hover:text-violet-300 flex items-center gap-1 font-mono"
-            >
-              <Code2 className="w-3.5 h-3.5" />
-              <span>{showCodeInput ? "Hide Code Input" : "Attach Code / Log"}</span>
-            </button>
-          </div>
-          <textarea
-            rows={3}
-            required
-            placeholder="e.g. Why is this PostgreSQL query failing, and how do I optimize the index?"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full rounded-lg bg-zinc-900 border border-white/10 p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500 transition-all leading-relaxed"
-          />
-        </div>
 
         {showCodeInput && (
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-zinc-400">
-                Code Snippet / Error Stack Trace (optional)
-              </label>
-              <span className="text-[10px] text-zinc-500 font-mono">Monospace editor</span>
-            </div>
-            <textarea
-              rows={5}
-              placeholder="Paste stack trace, function, query, or configuration..."
-              value={contextCode}
-              onChange={(e) => setContextCode(e.target.value)}
-              className="w-full font-mono text-xs rounded-lg bg-black/60 border border-white/10 p-3 text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500 leading-relaxed resize-y"
-              spellCheck={false}
-            />
-          </div>
+          <textarea
+            rows={4}
+            placeholder="Paste stack trace, function, query, or configuration..."
+            value={contextCode}
+            onChange={(e) => setContextCode(e.target.value)}
+            spellCheck={false}
+            className="w-full resize-y rounded-lg border border-white/10 bg-black/60 p-3 font-mono text-xs leading-relaxed text-zinc-200 placeholder-zinc-600 focus:border-violet-500 focus:outline-none"
+          />
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/5">
-          <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono">
-            <span>{charCount} / 8000 characters</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="submit"
-              disabled={loading || !prompt.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-xs font-medium text-white shadow-sm shadow-violet-700/30 hover:bg-violet-500 disabled:opacity-50 transition-all"
-            >
-              {loading ? (
-                <>
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Thinking...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send to Gemini</span>
-                </>
-              )}
-            </button>
-          </div>
+        <div className="flex items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCodeInput((v) => !v)}
+            title="Attach code / log"
+            className={`rounded-lg border p-2.5 transition-colors ${
+              showCodeInput || contextCode
+                ? "border-violet-500/40 bg-violet-600/20 text-violet-300"
+                : "border-white/10 bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Code2 className="h-4 w-4" />
+          </button>
+          <textarea
+            rows={1}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            placeholder={`Message DevOS AI — ${activeMode?.label ?? "General Query"} mode (Enter to send, Shift+Enter for new line)`}
+            className="max-h-40 min-h-[40px] flex-1 resize-none rounded-lg border border-white/10 bg-zinc-900 px-3 py-2.5 text-xs leading-relaxed text-zinc-100 placeholder-zinc-500 focus:border-violet-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={loading || !prompt.trim()}
+            className="rounded-lg bg-violet-600 p-2.5 text-white shadow-sm shadow-violet-700/30 transition-all hover:bg-violet-500 disabled:opacity-50"
+            aria-label="Send"
+          >
+            <Send className="h-4 w-4" />
+          </button>
         </div>
-      </form>
-
-      {/* Safety Disclaimer Banner */}
-      <div className="rounded-lg bg-black/40 border border-white/5 p-3 text-[11px] text-zinc-500 flex items-start gap-2 leading-relaxed">
-        <Sparkles className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-        <p>
-          <strong className="text-zinc-400 font-medium">Engineering Notice:</strong> AI responses are generated using Google Gemini. Suggestions, code snippets, and error resolutions should be verified, linted, and tested against local test suites before committing to production.
+        <p className="text-center text-[10px] text-zinc-600">
+          AI responses should be verified and tested before production use. Max 8000 characters per message.
         </p>
-      </div>
+      </form>
     </div>
   );
 }

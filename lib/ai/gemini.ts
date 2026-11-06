@@ -19,6 +19,7 @@ export interface AIAssistantRequest {
   prompt: string;
   contextCode?: string;
   responseStyle?: "concise" | "balanced" | "detailed";
+  history?: { role: "user" | "model"; text: string }[]; // Prior chat turns
   imageBase64?: string; // For screenshot analysis
   imageMimeType?: string; // e.g., image/png, image/jpeg
 }
@@ -241,6 +242,11 @@ export async function callGemini(request: AIAssistantRequest): Promise<AIAssista
       parts: [{ text: systemInstruction }],
     },
     contents: [
+      // ponytail: last 10 turns, text only; add summarization if long chats matter
+      ...(request.history ?? []).slice(-10).map((h) => ({
+        role: h.role === "model" ? "model" : "user",
+        parts: [{ text: String(h.text).slice(0, MAX_PROMPT_LENGTH) }],
+      })),
       {
         role: "user",
         parts,
