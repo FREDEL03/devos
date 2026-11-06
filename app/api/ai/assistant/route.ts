@@ -49,6 +49,7 @@ export async function POST(req: Request) {
       prompt: body.prompt,
       contextCode: body.contextCode,
       responseStyle,
+      history: Array.isArray(body.history) ? body.history : undefined,
     });
 
     return NextResponse.json(result);
