@@ -14,6 +14,15 @@ export interface TaskInput {
   due_date?: string | null;
 }
 
+const PRIORITIES: Priority[] = ["High", "Medium", "Low"];
+const STATUSES: TaskStatus[] = ["todo", "in_progress", "review", "completed"];
+
+function validateEnums(input: { priority?: string; status?: string }) {
+  if (input.priority !== undefined && !PRIORITIES.includes(input.priority as Priority)) return "Invalid priority.";
+  if (input.status !== undefined && !STATUSES.includes(input.status as TaskStatus)) return "Invalid status.";
+  return null;
+}
+
 export async function getTasks() {
   const supabase = await createClient();
   const {
@@ -58,6 +67,9 @@ export async function createTask(input: TaskInput) {
   if (!title) {
     return { error: "Task title is required." };
   }
+
+  const enumError = validateEnums(input);
+  if (enumError) return { error: enumError };
 
   const priority = input.priority || "Medium";
   const status = input.status || "todo";
@@ -106,6 +118,9 @@ export async function updateTask(id: string, input: Partial<TaskInput> & { compl
   if (authError || !user) {
     return { error: "Unauthorized" };
   }
+
+  const enumError = validateEnums(input);
+  if (enumError) return { error: enumError };
 
   const updatePayload: Record<string, unknown> = {};
 
